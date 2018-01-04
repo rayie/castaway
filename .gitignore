@@ -1,4 +1,6 @@
 kraft.json
+.DS_Store
+index.zip
 .*.swp
 node_modules
 */node_modules
