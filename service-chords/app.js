@@ -9,7 +9,7 @@ const SONG_BUCKET_NAME = "song-chords";
 const storage = require('@google-cloud/storage')({ projectId: "castaway-191110", keyFilename: "./storage-owner.keys.json" });
 
 const Datastore = require('@google-cloud/datastore');
-const datastore = Datastore({ projectId: "castaway-191110", keyFilename: "./datastore-writer.keys.json" });
+const datastore = Datastore({ projectId: "castaway-191110", keyFilename: "./datastore-owner.keys.json" });
 const DS_KIND = "Song";
 
 
@@ -22,9 +22,9 @@ const S = {
     timeout: 10000
   }),
   axiosSong: axios.create({
-      baseURL: "https://tabs.ultimate-guitar.com/",
-      timeout: 10000
-    }),
+    baseURL: "https://tabs.ultimate-guitar.com/",
+    timeout: 10000
+  }),
   agent : new https.Agent({ keepAlive: true }),
   songBkt : storage.bucket(SONG_BUCKET_NAME)
 }
@@ -253,5 +253,3 @@ exports.search = function(req,res){
   })
 }
 
-//search('this is me','greatest showman').then((pkg)=>{ console.log(pkg); });
-//run("tab/misc_soundtrack/the_greatest_showman_-_this_is_me_chords_2248659");
