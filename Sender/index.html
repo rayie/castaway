@@ -1,0 +1,112 @@
+<html>
+  <head>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+  </head>
+  <body>
+  <h1>Cast Away</h1>
+  <button style="width: 130px; height: 80px;" is="google-cast-button" value='Hey'></button>
+  <div style="clear:both"/>
+    <a style="margin-right:12px" >0</a>
+    <a style="margin-right:12px" >1</a>
+    <a style="margin-right:12px" >2</a>
+  <div style="clear:both"/>
+  </body>
+  <script>
+    $( document ).ready(function(){
+      window['__onGCastApiAvailable'] = function(isAvailable) {
+  	    if (isAvailable) {
+  		    console.log("is available");
+  	      xApp.initializeCastApi();
+        }
+      };
+
+    })
+
+
+    xApp = {
+      uu : [
+        { 
+      	  type:'image/jpeg',
+          url: "http://www.sickchirpse.com/wp-content/uploads/2017/08/Elephant.jpg",
+          metadata:{
+          	metadataType:0,
+          	title:"The Title",
+          	subtitle:"The SubTitle"
+          }
+        },
+        {
+      	  type:'image/jpeg',
+          url:"http://cdn-image.foodandwine.com/sites/default/files/styles/4_3_horizontal_-_1200x900/public/1494964194/comparison-broccoli-cauliflower-differences-FT-BLOG0517.jpg?itok=SWDZsts3",
+        },
+        {
+      	  type: 'text/html; charset=UTF-8',
+          url: "http://learn.jquery.com/events/event-basics/"
+        }
+      ],
+
+      initializeCastApi : function() {
+  	    var cc = cast.framework.CastContext.getInstance();
+  	    cc.setOptions({
+          receiverApplicationId: "6DA08A38",
+          //receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+  	      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+  	    });
+  	    console.log("options set");
+        cc.addEventListener(cast.framework.CastContextEventType.CAST_STATE_CHANGED, function(e){
+  	      console.log('got cast state change',e);
+  	      //console.log(cc.getCastState());
+  	    })
+
+        cc.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, function(e){
+    	    console.log('got cast session state change');
+    	    console.log(e);
+          switch(e.sessionState){
+      	    case "SESSION_STARTED":
+      	    case "SESSION_RESUMED":
+  	          //console.log(cc.getSessionState());
+              xApp.s = e.session;
+      	      break;
+            default:
+              break;
+          }
+        })
+
+        jQuery('a').unbind("click").bind("click", function(a,b){
+          console.log($(this).text());
+          var n = parseInt($(this).text(),10);
+          xApp.startMedia(n);
+        })
+  	      console.log(cc.getCastState());
+
+          /*
+  	      cc.requestSession() 
+  	      .then(function(a){
+            console.log("session starting");
+  	        var castSession = cc.getCurrentSession();
+  	        console.log(castSession);
+  	      })
+  	      .catch(function(err){
+  		      console.error("got err from requestSession" );
+  		      console.error(err);
+  	      })
+  	      */
+  	  },
+
+  	  startMedia : function(n){
+  		  var mediaInfo = new chrome.cast.media.MediaInfo(xApp.uu[n].url, xApp.uu[n].type);
+  		  mediaInfo.metadata = xApp.uu[n].metadata;
+  		  console.log(mediaInfo);
+  		  var request = new chrome.cast.media.LoadRequest(mediaInfo);
+  		  console.log(request);
+  		  xApp.s.loadMedia(request).then(
+  		    function() { console.log('Load succeed'); },
+  		    function(errorCode) { console.log('Error code: ' + errorCode); }
+  		  );
+  	  }
+
+    };
+  </script>
+  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+<html>
+
+
