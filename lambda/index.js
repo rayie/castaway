@@ -15,10 +15,9 @@ const APP_ID = "amzn1.ask.skill.63e5bfb4-c558-4d8e-9f40-043f2feba9d6";  // TODO 
 const _ = require('lodash');
 const axios = require("axios");
 const https = require('https');
-const TMPDIR = "/tmp/";
 const S = {
   axiosInstance : axios.create({
-    baseURL: "https://us-central1-attentiongame.cloudfunctions.net/",
+    baseURL: "https://us-central1-castaway-191110.cloudfunctions.net/",
     timeout: 10000
   }),
   agent : new https.Agent({ keepAlive: true })
@@ -48,6 +47,10 @@ const handlers = {
         console.log("App ID", this.appId);
         this.emit(':tell','You\'ve launched to Ray\'s CastAway app.');
     },
+    'SessionEndedRequest': function () {
+        console.log("App ID", this.appId);
+        console.log('Cast away ended session');
+    },
     'GetChords': function() {
        //var artist = this.event.request.intent.slots["object.startDate"].value;
        console.log('reached handler 1');
@@ -56,11 +59,13 @@ const handlers = {
        
        var artist = _.get(this.event.request.intent.slots,'artist',false);
        var songTitle = _.get(this.event.request.intent.slots,'songTitle',false);
+       var self = this;
        if (artist && songTitle){
          //this.emit(':tell',artist.value + " is the artist,  " + songTitle.value + " is the song. I'll try to find it.");
          return searchUg(artist,songTitle)
          .then((pkg)=>{
-           this.emit(':tell',pkg.msgToTell);  
+           console.log("receied response from searchUG",pkg.msgToTell);
+           self.emit(':tell',pkg.msgToTell);  
            return;
          })
   
