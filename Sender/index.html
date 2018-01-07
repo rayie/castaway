@@ -4,6 +4,7 @@
   </head>
   <body>
   <h1>Cast Away</h1>
+  <h3 id="statusMsg"></h3>
   <button style="width: 130px; height: 80px;" is="google-cast-button" value='Hey'></button>
   <div style="clear:both"/>
     <a style="margin-right:12px" >0</a>
@@ -11,12 +12,13 @@
     <a style="margin-right:12px" >2</a>
   <div style="clear:both"/>
   </body>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     $( document ).ready(function(){
+  	      xApp.initSocketIO();
       window['__onGCastApiAvailable'] = function(isAvailable) {
   	    if (isAvailable) {
   		    console.log("is available");
-  	      xApp.initializeCastApi();
         }
       };
 
@@ -43,7 +45,18 @@
           url: "http://learn.jquery.com/events/event-basics/"
         }
       ],
-
+      initSocketIO: function(){
+        xApp.socket = io();
+        xApp.socket.on('msg-from-server', function(data){
+        	console.log(data.msg);
+        	$('#statusMsg').html(data.msg);
+        })
+        xApp.socket.on('message', function(msgdata){
+        	console.log('got message event',msgdata);
+        	$('#statusMsg').html(msgdata);
+        })
+  	    xApp.initializeCastApi();
+      },
       initializeCastApi : function() {
   	    var cc = cast.framework.CastContext.getInstance();
   	    cc.setOptions({
@@ -54,6 +67,7 @@
   	    console.log("options set");
         cc.addEventListener(cast.framework.CastContextEventType.CAST_STATE_CHANGED, function(e){
   	      console.log('got cast state change',e);
+  	      xApp.socket.emit("msg-from-client",{msg: "cast state changed" });
   	      //console.log(cc.getCastState());
   	    })
 
