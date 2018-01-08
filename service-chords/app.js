@@ -7,12 +7,9 @@ const read = Promise.promisify(fs.readFile);
 const $ = require('cheerio');
 const SONG_BUCKET_NAME = "song-chords";
 const storage = require('@google-cloud/storage')({ projectId: "castaway-191110", keyFilename: "./storage-owner.keys.json" });
-
 const Datastore = require('@google-cloud/datastore');
 const datastore = Datastore({ projectId: "castaway-191110", keyFilename: "./datastore-owner.keys.json" });
 const DS_KIND = "Song";
-
-
 const axios = require("axios");
 const https = require('https');
 const S = {
@@ -53,7 +50,8 @@ function song(path){
       //we already have the html, we just need to update the metadata field so storage pubsub event fires
       console.log("we already have the html, we just need to update the metadata field so storage pubsub event fires");
       return {
-        success: true
+        success: true,
+        statements: [ 'Got it' ]
       }
     }
 
@@ -100,7 +98,7 @@ function song(path){
       return datastore.get(key)
     })
     .then((entities)=>{
-      console.log("got datastore entities" , entites.length);
+      console.log("got datastore entities" , entities.length);
       entities[0].path = path;
       return datastore.update({ key: key, data: entities[0] })
     })
@@ -135,8 +133,10 @@ function song(path){
 
   })
   .then((pkg)=>{
-    if ( !pkg.success ) 
+    if ( !pkg.success ) {
+      console.log("pkg.success failed", pkg);
       return pkg; //failed
+    }
 
     //update meta so chromecast sender app Express erver get's gets notified (via storage pub/sub)
     //which will notify chromecast sender client (on chrome browser) via socket.io
@@ -144,6 +144,7 @@ function song(path){
     .then(()=>{
       return pkg;
     })
+    .catch((errB)=>{ throw errB; })
   })
   .catch((err)=>{
     return { //failed
@@ -167,7 +168,7 @@ function updateMeta(path){
     }
   })
   .then((d)=>{
-    console.log(d); 
+    //console.log(d); 
     return true;
   })
   .catch((err)=>{
@@ -236,6 +237,7 @@ function search(artist,title){
         rec: recs.pop()  
       }
 
+      console.log("done sorting datastore results");
       return returnPkg;
     }
 
@@ -255,6 +257,7 @@ function searchDatastore(artist,title){
 
   return datastore.runQuery(q)
   .then(( rr ) => {
+    console.log('datastore runQuery result')
     if (rr.length===0 ) throw new Error("Failed query");
     return rr[0];
   })
@@ -265,13 +268,14 @@ function searchDatastore(artist,title){
 }
 
 function saveChords(returnPkg){
+  console.log("begin saving chord links");
   return Promise.mapSeries( returnPkg.recs, (r)=>{ 
     var ug_path = r.url.replace("https://tabs.ultimate-guitar.com/","");
     console.log(ug_path);
     var key = datastore.key([ DS_KIND, ug_path ]);
     return datastore.upsert({ key: key, data:r })
     .then(()=>{
-      console.log('inserted');
+      //console.log('inserted');
       return true;
     })
     .catch((err)=>{
@@ -300,9 +304,10 @@ function searchUG(artist,title){
     httpsAgent: S.agent
   }
   
-  console.log("Fetching search results:", rc.url);
+  console.log("running UG search:", rc.url);
   return S.axiosSearch.request(rc)
   .then((res)=>{
+    console.log("got response form UG search");
     var tt  = $("div.content table",res.data);
     
     //console.log(tt.length);
@@ -321,6 +326,7 @@ function searchUG(artist,title){
       }
     }
 
+    console.log("begin processing ug links");
     links.each(function(idx,atag){
 
       //console.log($(atag).attr("href"));
@@ -367,7 +373,7 @@ function searchUG(artist,title){
         rec:false
       }
     }
-
+    console.log("end processing ug links");
     recs.sort(sortByRating);
     var st = buildStatements(recs);
     st.push("on Ultimate Guitar.");
@@ -436,7 +442,11 @@ exports.song = function(req,res){
   if (!ug_url) return res.status(500).send({msg:"Missing ug url"});
 
   return song(ug_url)
-  .then(res.send)
+  .then(( pkg )=>{
+    console.log("final pkg from song");
+    console.log(pkg);
+    return res.send(pkg);
+  })
   .catch((err)=>{
     console.error('caught err in exports.song');
     console.log(err);

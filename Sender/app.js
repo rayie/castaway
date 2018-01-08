@@ -91,7 +91,9 @@ const received_song_chords_msg = (gcp_pub_msg)=>{
   return S.axiosFetchSongChords.request(rc)
   .then((res)=>{
     var pre_html = res.data;
-    //console.log('got pre_html', res.data);
+    console.log("--START PRE HTML--");
+    console.log(res.data);
+    console.log("--END PRE HTML--");
     for(var client_id in app.locals.clients){
       if (app.locals.clients[client_id].connected){
         console.log(client_id, " is connceted");
@@ -103,10 +105,8 @@ const received_song_chords_msg = (gcp_pub_msg)=>{
   })
 }
 
-
 var subscription_to_song_chords = pubsub.topic('song-chords').subscription('sub-to-song-chords');
 subscription_to_song_chords.on('message',received_song_chords_msg);
-
 app.locals.clients = [];
 
 app.get('/', function(req, res){
@@ -122,14 +122,12 @@ io.on('connection', function(socket){
   socket.on('msg-from-client',(data)=>{
     console.log(data);
   })
-
   
   app.locals.clients[ socket.id ] = socket;
   socket.on('disconnect',(reason)=>{
     console.log(socket.id + " disconnected with reason:" , reason);
     delete app.locals.clients[ socket.id ];
   })
-
 
   console.log("\n---socket--\n");
   //console.log(socket); 

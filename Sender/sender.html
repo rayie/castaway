@@ -206,12 +206,16 @@ limitations under the License.
           xApp.socket.on('msg-from-server', function(data){
         	  console.log("got msg from server")
         	  console.log(data);
-            return xApp.format(data.pre_html);
-        	  $('#senderPre').html(data.pre_html);
-        	  //sendMessage(data.pre_html)
+        	  xApp.reset();
+            xApp.format(data.pre_html);
+        	  return sendMessage(data.pre_html)
           })
         },
+        reset: function(){
+          $("<td>").each(function(el){ $(el).html(""); })
+        },
         format: function(ph){
+
           console.log("formatting pre_html", ph.length);
           var col1 = ph.split("\n");
           var linesPerCol = Math.floor( col1.length/3 );

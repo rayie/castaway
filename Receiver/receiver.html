@@ -48,7 +48,7 @@ limitations under the License.
       div#wrap pre {
         font-weight:bold;
         font-family:Verdana, Geneva, sans-serif;
-        font-size:16px;
+        font-size:14px;
         color:#FFFFFF;
       }
 
@@ -56,7 +56,7 @@ limitations under the License.
     <title>Cast Hello Text</title>
   </head>
   <body>
-    <div id="message">Talk to me</div>
+    <div id="message">Hello V4</div>
     <div id="wrap">
       <div style='width:100%'>
         <table style='width: 96%;'>
@@ -68,28 +68,29 @@ limitations under the License.
         </table>
         <div id='chord'></div>
       </div>
-      <pre id="pre">How does
-      this look  
-no indent
-      with indents
-      </pre>
     </div>
     <script type="text/javascript" src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script type="text/javascript">
       $( document ).ready(function(){
       	  xApp.init();
-      	  setTimeout(function(){  $("#message").text("from jquery"); },3000);
+      	  //setTimeout(function(){  $("#message").text("from jquery"); },3000);
       })
       xApp = {
-        displayText: function(text) {
+        displayTitle: function(text) {
           console.log(text);
           document.getElementById('message').innerText = text;
           window.castReceiverManager.setApplicationState(text);
         },
 
         format: function(ph){
+        	console.log('ph',ph);
+          $("#col1").html("");
+          $("#col2").html("");
+          $("#col3").html("");
         	var col1 = ph.split("\n");
+        	if ( col1.length===1 ) return xApp.displayTitle(ph);
+
           var linesPerCol = Math.floor( col1.length/3 );
           var col2 = col1.splice(linesPerCol);
           var col3 = col2.splice(linesPerCol); 

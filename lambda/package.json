@@ -5,6 +5,7 @@
   "dependencies": {
     "alexa-sdk": "^1.0.10",
     "lodash": "*",
-    "axios": "*"
+    "axios": "*",
+    "bluebird": "^3.5.1"
   }
 }
