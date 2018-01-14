@@ -6,26 +6,21 @@ const Promise = require("bluebird");
 const moment = require("moment");
 const PORT = process.env.PORT || 8080;
 
-
 const axios = require("axios");
 const https = require('https');
 const S = {
-  //https://www.ultimate-guitar.com/search.php?search_type=title&order=&value=kesha+your+love+is+my+drug
   axiosFetchSongChords: axios.create({
     baseURL: "https://www.googleapis.com/",
-    timeout: 5000
+    timeout: 8000
   }),
   agent : new https.Agent({ keepAlive: true }),
-  //songBkt : storage.bucket(SONG_BUCKET_NAME)
 }
-
-/*
 const pubsub = require('@google-cloud/pubsub')({
-  projectId: 'test-docflow',
-  keyFilename: './.credentials/test-docflow-ocr-subscriber-key.json'
-});
-*/
-const pubsub = require('@google-cloud/pubsub')();
+  projectId: "castaway-191110",
+  keyFilename: './storage-subscriber.json'
+})
+
+//const pubsub = require('@google-cloud/pubsub')();
 
 /*
 Example gcp_pub_msg looks like:  (the data field contains a Buffer , it must be toString()'d to  
@@ -107,6 +102,7 @@ const received_song_chords_msg = (gcp_pub_msg)=>{
 
 var subscription_to_song_chords = pubsub.topic('song-chords').subscription('sub-to-song-chords');
 subscription_to_song_chords.on('message',received_song_chords_msg);
+console.log(subscription_to_song_chords);
 app.locals.clients = [];
 
 app.get('/', function(req, res){

@@ -16,7 +16,7 @@ const S = {
   //https://www.ultimate-guitar.com/search.php?search_type=title&order=&value=kesha+your+love+is+my+drug
   axiosSearch: axios.create({
     baseURL: "https://www.ultimate-guitar.com/",
-    timeout: 10000
+    timeout: 12000
   }),
   axiosSong: axios.create({
     baseURL: "https://tabs.ultimate-guitar.com/",
@@ -104,7 +104,8 @@ function song(path){
     })
     .then((datastoreUpdateResult)=>{
       return {
-        success: true
+        success: true,
+        statements: [ 'Got It' ]
       }
     })
     .catch((err) =>{
@@ -141,7 +142,8 @@ function song(path){
     //update meta so chromecast sender app Express erver get's gets notified (via storage pub/sub)
     //which will notify chromecast sender client (on chrome browser) via socket.io
     return updateMeta(path)
-    .then(()=>{
+    .then((updateMetaResult)=>{
+      console.log('updateMetaResult',updateMetaResult);
       return pkg;
     })
     .catch((errB)=>{ throw errB; })
@@ -158,7 +160,8 @@ function song(path){
 function updateMeta(path){
   let fileInBucket = S.songBkt.file(path);
   var val = [
-    new Date().getTime(),
+    new Date().toString().replace(/ /g,"_"),
+    Math.random()*1000,
     "rie" 
   ].join("-")
 

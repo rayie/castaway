@@ -7,7 +7,7 @@ const https = require('https');
 const S = {
   axiosInstance : axios.create({
     baseURL: "https://us-central1-castaway-191110.cloudfunctions.net/",
-    timeout: 5000
+    timeout: 14000
   }),
   agent : new https.Agent({ keepAlive: true })
 }
@@ -21,6 +21,8 @@ const gcp_search = function(artist, title ){
   }
   return S.axiosInstance.request(rc)
   .then((res) =>{
+     console.log("song response");
+     console.log(res.data);
      return res.data;
   })
   .catch((err)=>{
@@ -96,17 +98,19 @@ const GetChords = function() {
         
      const directiveB = new Alexa.directives.VoicePlayerSpeakDirective(requestId, msgB);
      const progResB = ds.enqueue(directiveB, endpoint, token).catch(( dirBErr )=> { 
-        self.emit(":tell","Directive B failed");
-        return;
+       self.emit(":tell","Directive B failed");
+       return;
      })
-
      progResB.then(( ) => {  console.log('progResB completed');  });
      return gcp_song(pkg.rec.url) 
    })
-   .then((pkg)=>{
-     console.log(pkg);
-     if(!pkg.success){
-       self.emit(':tell',_.get(pkg,'statements',["Unknown Error from GCP."]).join(" ") );
+   .then((songPkg)=>{
+     console.log("songPkg",songPkg);
+     if(false===songPkg.success){
+       self.emit(':tell',_.get(songPkg,'statements',["Unknown Error from GCP."]).join(" ") );
+     }
+     else{
+       self.emit(':responseReady');
      }
    })
    .catch((iErr)=>{
