@@ -4,6 +4,7 @@ index.zip
 .*.swp
 node_modules
 */node_modules
+*/.env
 .env
 lib/*keys*
 *keys*

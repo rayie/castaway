@@ -16,81 +16,247 @@ limitations under the License.
     <style type="text/css">
       body {
         overflow:hidden;
+        background-color: #000000;
       }
-      div#message {
-        width:1280PX;
-        height:720PX;
-        top: 0;
-        left: 0;
-
-        text-align:center;
-        border:0px solid silver;
+      div.title ,
+      div.title {
         display: table-cell;
-        /* vertical-align:middle;*/
-        color:#FFFFFF;
+        color:#ffffff;
         background-color:#000000;
-        font-weight:bold;
-        font-family:Verdana, Geneva, sans-serif;
-        font-size:40px;
+        font-weight: 450;
+        font-family: Arial;
+        font-size:18px;
         position:absolute;
+      }
+      .left {
+        text-align: center;
+        top: 0px;
+        left: 0px;
+        width:600px;
+        height:720px;
+      }
+      .title.right {
+        text-align:center;
+        top: 0px;
+        left: 600px;
+        width:600PX;
+        height:720PX;
       }
 
       div#wrap {
-        width:1260PX;
-        height:700PX;
+      	display: hidden;
+        width:1260px;
+        height:700px;
         top: 0;
         left: 0;
-
         padding: 10px;
-        position:absolute;
+        position: absolute;
       }
 
       div#wrap pre {
-        font-weight:bold;
+        font-weight: 500;
         font-family:Verdana, Geneva, sans-serif;
-        font-size:14px;
+        /* font-family: font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace; */
+        font-size:13px;
         color:#FFFFFF;
+      }
+
+      div#wrap pre span {
+      	color: yellow;
+      }
+
+      #stateDiv {
+        font-weight: 600;
+        font-size: 42px;
+        vertical-align: middle;
+        text-align: center;
+        color: #fff;
+        width:1260px;
+        height:700px;
+        top: 280px;
+        left: 0;
+        padding: 10px;
+        position:absolute;
       }
 
     </style>
     <title>Cast Hello Text</title>
   </head>
   <body>
-    <div id="message">Hello V4</div>
+    <div class="title left" id="titleLeft">KLeft</div>
+    <div class="title right" id="titleRight">Right</div>
+
+    <div id="stateDiv" style='width:96%'>
+      CastAway Receiver
+    </div>
+
     <div id="wrap">
       <div style='width:100%'>
         <table style='width: 96%;'>
           <tr>
             <td style='width: 32%;padding-right: 10px;border-right: 1px solid #000' id='col1'></td>
-            <td style='width: 32%; padding-right: 10px;border-right: 1px solid #000;' id='col2'></td>
+            <td style='width: 32%;padding-right: 10px;border-right: 1px solid #000;' id='col2'></td>
             <td style='width: 32%;' id='col3'></td>
           </tr>
         </table>
-        <div id='chord'></div>
       </div>
     </div>
     <script type="text/javascript" src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script> 
     <script type="text/javascript">
       $( document ).ready(function(){
       	  xApp.init();
+      	  xApp.initPubNub();
       	  //setTimeout(function(){  $("#message").text("from jquery"); },3000);
       })
+      var TransposeMap = {
+          up : {
+          "A": "Bb",
+          "B": "C",
+          "C": "C#",
+          "D": "D#",
+          "E": "F",
+          "F": "F#",
+          "G": "G#",
+
+          "A#": "B",
+          "B#": "C#",
+          "C#": "D",
+          "D#": "E",
+          "E#": "F#",
+          "F#": "G",
+          "G#": "A",
+
+          "Ab": "A",
+          "Bb": "B",
+          "Cb": "C",
+          "Db": "D",
+          "Eb": "E",
+          "Fb": "F",
+          "Gb": "G"
+        } , 
+        down: {
+          "A": "Ab",
+          "B": "Bb",
+          "C": "B",
+          "D": "Db",
+          "E": "Eb",
+          "F": "E",
+          "G": "F#",
+
+          "A#": "A",
+          "B#": "B",
+          "C#": "C",
+          "D#": "D",
+          "E#": "E",
+          "F#": "F",
+          "G#": "G",
+
+          "Ab": "G",
+          "Bb": "A",
+          "Cb": "Bb",
+          "Db": "C",
+          "Eb": "D",
+          "Fb": "Eb",
+          "Gb": "F"
+        } 
+      }
+      function upstep(){ step('up') }
+      function downstep(){ step('down') }
+      function step(way){
+        jQuery("pre span").each(function(idx,el){
+          var chord =  jQuery(el).text().trim();
+          console.log("old:",chord);
+          var mm = chord.match( /[A-G][#b]{0,1}/g );
+          mm.forEach(function(m){
+            chord = chord.replace(m, TransposeMap[way][m]);
+          });
+          console.log("new:",chord);
+          jQuery(el).text(chord);
+        });
+      }
       xApp = {
-        displayTitle: function(text) {
-          console.log(text);
-          document.getElementById('message').innerText = text;
-          window.castReceiverManager.setApplicationState(text);
+        initPubNub: function(){
+          xApp.pubnub = new PubNub({
+            subscribeKey: 'sub-b8449342-0962-11e1-bec7-05a8a56cd07c', // always required
+            publishKey: 'pub-4f2959b6-ad9f-4c3a-a7d6-39aa4232d153' // only required if publishing
+          });
+
+          xApp.pubnub.addListener({
+          	status: function(se){  
+              console.log('se');
+              console.log(se);
+              $("#titleRight").text(se.category);
+          	},
+            message: function(msg){
+              console.log("got pubnub msg")
+              $("#titleLeft").text("got pubnub msg");
+              console.log(msg);
+              msg = msg.message;
+              switch(msg.kind){
+                case "chords": 
+                  $("#titleRight").text(msg.pathToChords);
+                  console.log("got path:"+msg.pathToChords);
+                  return xApp.ajaxChords(msg.pathToChords);
+                case "state":
+                  return xApp.loadMsg(msg.txt);
+                case "transpose":
+                  $("#wrap").hide();
+                  $("#stateDiv").html("transposing " + msg.dir + " " + msg.steps + " half steps").fadeIn();
+                  for(var i =0 ; i < msg.steps; i++){ step(msg.dir); };
+                  $("#stateDiv").hide();
+                  $("#wrap").fadeIn(300);
+                  return ;
+                default:
+                          
+                  break;
+              }
+            }
+          });
+          xApp.pubnub.subscribe({ channels: ['castaway'] });
         },
 
-        format: function(ph){
+        ajaxChords: function(path){
+          //https://storage.googleapis.com/song-chords/tab/billy_joel/uptown_girl_chords_62042
+          var url = "https://storage.googleapis.com/song-chords/" + path;
+          $.get(url,function(pre_html){
+          	$("#titleLeft").text("got chords");
+            xApp.formatChords(pre_html);
+          }).fail(function(err){
+          	$("#titleLeft").text("got err");
+            console.error("ajaxChords failed");
+            console.error(err);
+          })
+        },
+
+        backdrop: function(){
+        },
+
+        loadMsg: function(html) {
+          $("#wrap").hide();
+          $("#stateDiv").html(html).fadeIn(3);
+          //window.castReceiverManager.setApplicationState(text);
+        },
+
+        displayTitle: function(text) {
+          console.log(text);
+          $("#titleLeft").text(text);
+          //window.castReceiverManager.setApplicationState(text);
+        },
+
+        formatChords: function(ph){
+
         	console.log('ph',ph);
-          $("#col1").html("");
-          $("#col2").html("");
-          $("#col3").html("");
         	var col1 = ph.split("\n");
         	if ( col1.length===1 ) return xApp.displayTitle(ph);
 
+          $("#wrap").hide();
+          //$("#stateDiv").html("..formatting chords").fadeIn();
+
+          $("#col1").html("");
+          $("#col2").html("");
+          $("#col3").html("");
           var linesPerCol = Math.floor( col1.length/3 );
           var col2 = col1.splice(linesPerCol);
           var col3 = col2.splice(linesPerCol); 
@@ -103,23 +269,23 @@ limitations under the License.
             col3 = [col2.pop()].concat(col3);
           }
 
-          var pre1 = jQuery("<pre></pre>");
+          var pre1 = $("<pre></pre>");
           pre1.html(col1.join("\n"));
 
-          var pre2 = jQuery("<pre></pre>");
+          var pre2 = $("<pre></pre>");
           pre2.html(col2.join("\n"));
           
-          var pre3 = jQuery("<pre></pre>");
+          var pre3 = $("<pre></pre>");
           pre3.html(col3.join("\n"));
           
           $("#col1").append(pre1);
           $("#col2").append(pre2);
           $("#col3").append(pre3);
+
+          $("#stateDiv").hide();
+          $("#wrap").fadeIn();
         },
 
-        setPre: function(pre_html) {
-        	xApp.format(pre_html);
-        },
         init: function(){
           //window.onload = function() {
           cast.receiver.logger.setLevelValue(0);
@@ -155,7 +321,7 @@ limitations under the License.
           window.messageBus.onMessage = function(event) {
             console.log('Message [' + event.senderId + ']: ' + event.data);
             // display the message from the sender
-            xApp.setPre(event.data);
+            xApp.formatChords(event.data);
             // inform all senders on the CastMessageBus of the incoming message event
             // sender message listener will be invoked
             window.messageBus.send(event.senderId, event.data);
