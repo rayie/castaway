@@ -119,7 +119,7 @@ const NextVersion = function() {
        self.emit(':tell',_.get(songPkg,'statements',["Unknown Error from GCP."]).join(" ") );
      }
      else{
-       self.emit(':responseReady');
+       self.emit(':tell',"How about this version?");
      }
   })
   .catch((err)=>{
@@ -130,16 +130,31 @@ const NextVersion = function() {
 
 const Transpose = function() {
    var self = this;
-   var dir = _.get(this.event.request.intent.slots,'direction',{value:'up'}).value; //up or down
-   var steps = _.get(this.event.request.intent.slots,'steps',{value:1}).value;
-   console.log('steps and dir', steps , dir);
+   var dir = _.get(this.event.request.intent.slots,'direction.value','up'); //up or down
+   var steps = _.get(this.event.request.intent.slots,'steps.value',false);
+   var fullSteps = _.get(this.event.request.intent.slots,'fullSteps.value',false);
+   console.log("slots");
+   console.log(this.event.request.intent.slots);
+   if (dir!=="up" && dir!=="down"){
+     dir="up";
+   }
 
+   if (!steps && !fullSteps){
+     steps = 1;
+   }
+   else if (false===steps){
+     steps = fullSteps*2;
+   }
+
+   console.log('steps and dir', steps , dir);
+   var tell = "Transposing " + steps + " half  steps " + dir;
    return toReceiver({ 
      kind:"transpose",
      steps: steps,
      dir: dir
    },true)
    .then(( )=>{
+     self.emit(':tell',tell);
       return self.emit(':responseReady');
    })
    .catch((err)=>{

@@ -13,9 +13,9 @@ const DS_KIND = "Song";
 
 const dotenv = require('dotenv');
 const envConfig = dotenv.parse(fs.readFileSync('.env'))
-const PUBNUB_SUB_KEY=envConfig.PUBNUB_SUB_KEY;
-const PUBNUB_PUB_KEY=envConfig.PUBNUB_PUB_KEY;
-const startStr = "window.UGAPP.store.page";
+
+const PUBNUB_SUB_KEY=process.env.PUBNUB_SUB_KEY;
+const PUBNUB_PUB_KEY=process.env.PUBNUB_PUB_KEY;
 
 const axios = require("axios");
 const http = require('http');
@@ -91,8 +91,6 @@ function song(path){
       }
     }
 
-    console.log("Not in datastore");
-
     /** CASE: B **/
     //fetch the html from ultimate guitar
     var rc = {
@@ -105,7 +103,22 @@ function song(path){
     console.log("fetching pre_html stored at " + path);
     return S.Song.request(rc)
     .then((res)=>{
-      return parseSong(pathToTmp,res);
+      var nn = $("pre.js-tab-content.js-copy-content.js-tab-controls-item",res.data);
+      //console.log(nn); console.log(nn.length);
+      if(nn.length===0){
+        throw new Error("Failed to fetch chord sheet");
+      }
+
+      var pre_html = nn.eq(0).html();
+      console.log('len of pre_html',pre_html.length);
+
+      /*
+       * got the html we want
+       * 1. store it in storage bucket song-chords/path/to/chordsheet
+       * 2. update datastore record to indicate we have the html
+       */
+      console.log("writing to ", pathToTmp);
+      return write(pathToTmp,pre_html)
     })
     .then(( )=>{
       console.log("write to tmp ok");
@@ -185,49 +198,6 @@ function song(path){
       err: err.response.statusText
     }
   })
-}
-function parseSong_legacy(pathToTmp,res){
-  var nn = $("pre.js-tab-content.js-copy-content.js-tab-controls-item",res.data);
-  //console.log(nn); console.log(nn.length);
-  if(nn.length===0){
-    throw new Error("Failed to fetch chord sheet");
-  }
-
-  var pre_html = nn.eq(0).html();
-  console.log('len of pre_html',pre_html.length);
-
-  /*
-   * got the html we want
-   * 1. store it in storage bucket song-chords/path/to/chordsheet
-   * 2. update datastore record to indicate we have the html
-   */
-  console.log("writing to ", pathToTmp);
-  return write(pathToTmp,pre_html)
-}
-
-function parseSong(pathToTmp,res){
-  var str = res.data.toString();
-  var pos = str.search(startStr);
-  console.log("pos of start str", pos);
-  var k = str.slice(pos);
-  // window.UGAPP.store.page = {"template":.... }</script>\n
-  k = k.split(/\n/g)[0];
-  k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>/,"");
-  k = JSON.parse(k);
-  console.log("got response form UG search");
-  var pre_html = _.get(k,'data.tab_view.wiki_tab.content',"").trim();
-  if(!pre_html){
-    throw new Error("Failed to parse chord sheet");
-  }
-  pre_html = pre_html.replace(/\[ch\]/g,"<span>").replace(/\[\/ch\]/g,"</span>");
-  console.log(pre_html);
-  /*
-   * got the html we want
-   * 1. store it in storage bucket song-chords/path/to/chordsheet
-   * 2. update datastore record to indicate we have the html
-   */
-  console.log("writing to ", pathToTmp);
-  return write(pathToTmp,pre_html)
 }
 
 function publishToPubNubCastawayChannel(payload){
@@ -381,141 +351,6 @@ function saveChords(returnPkg){
   })
 }
 
-
-function parseUGListing_Legacy(artist,title,res){
-  var tt  = $("div.content table",res.data);
-  
-  //console.log(tt.length);
-  if ( tt.length=== 0 ){
-    throw new Error("UG content not found");
-  }
-
-  var tbl = tt.eq(0)
-  var links = $( "a.song.result-link", tbl );
-  var recs = [];
-
-  if ( links.length=== 0 ){
-    return {
-      statements: [ `Sorry I did not find any chords matching ${title} by ${artist}` ],
-      rec:false
-    }
-  }
-
-  console.log("begin processing ug links");
-  links.each(function(idx,atag){
-
-    //console.log($(atag).attr("href"));
-    var url = $(atag).attr("href");
-    var tr = $(atag).parents("tr").eq(0);
-
-    if ( !tr ){ 
-    
-    }
-    else{
-
-      //console.log("tds:", $("td",tr).length);
-      var tds = $("td",tr);
-
-      if ( tds.length < 4 ) throw new Error("Error parsing UG sr cant find tds");
-
-      var rating = $(".ratdig",tds.eq(2)).text();
-      var fmt = tds.eq(3).children().eq(0).text();
-
-      //console.log(url, rating,fmt);
-      //returnPkg.urls.push(url);
-      rating = parseInt(rating);
-      rating = (isNaN(rating))?0:rating;
-
-      recs.push({ url: url, rating: rating, fmt:  fmt , artist: artist, title:title });
-      return;
-    }
-  })
-
-  if ( recs.length=== 0 ){
-    return {
-      statements: [ `Sorry, I could not parse the results from Ultimate Guitar` ],
-      rec:false
-    }
-  }
-
-  recs = recs.filter(function(r){ 
-    return r.fmt=="chords" || r.fmt=="tab";
-  })
-
-  if (recs.length===0){
-    return {
-      statements: [ `I didn\'t find any chords or tabs on Ultimate Guitar` ],
-      rec:false
-    }
-  }
-  console.log("end processing ug links");
-  recs.sort(sortByRating);
-  var st = buildStatements(recs);
-  st.push("on Ultimate Guitar.");
-  var returnPkg = {
-    statements: st, 
-    recs: recs
-  }
-  return returnPkg;
-}
-
-
-function parseUGListing(artist,title,res){
-  var str = res.data.toString();
-  var pos = str.search(startStr);
-  console.log("pos of start str", pos);
-  var k = str.slice(pos);
-  // window.UGAPP.store.page = {"template":.... }</script>\n
-  k = k.split(/\n/g)[0];
-  k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>/,"");
-  k = JSON.parse(k);
-
-  console.log("got response form UG search");
-  var recs = k.data.results.filter((r)=>{
-    return (
-      _.get(r,'tab_access_type',false)==='public' 
-      &&
-      _.intersection( [_.get(r,'type',false)], [ 'Chords','Tabs' ] ).length>0
-    )
-  })
-  .map((r)=>{
-    return { 
-      url: r.tab_url, 
-      rating: r.rating, 
-      fmt: r.type.toLowerCase(), 
-      artist: artist, 
-      title:title 
-    };
-  })
-
-  console.log(returnPkg);
-  if ( recs.length=== 0 ){
-    return {
-      statements: [ `Sorry, I could not parse the results from Ultimate Guitar` ],
-      rec:false
-    }
-  }
-
-  var st = buildStatements(recs);
-  st.push("on Ultimate Guitar.");
-  var returnPkg = {
-    statements: st, 
-    recs: recs
-  }
-  console.log(returnPkg);
-  return returnPkg;
-
-
-  /*
-  write("/tmp/results.json",JSON.stringify(k.data.results))
-  .then(process.exit)
-  .catch((err)=>{
-    console.log(err);
-    process.exit();
-  })
-  */
-}
-
 function searchUG(artist,title){
   var _artist = encodeURIComponent(artist);
   var _title = encodeURIComponent(title);
@@ -527,11 +362,85 @@ function searchUG(artist,title){
     httpsAgent: S.agentHttps
   }
   
-  var baseURL =  "https://www.ultimate-guitar.com/";
-  console.log("running UG search:", baseURL + rc.url);
+  console.log("running UG search:", rc.url);
   return S.Search.request(rc)
   .then((res)=>{
-    return parseUGListing(artist,title,res);
+    console.log("got response form UG search");
+    var tt  = $("div.content table",res.data);
+    
+    //console.log(tt.length);
+    if ( tt.length=== 0 ){
+      throw new Error("UG content not found");
+    }
+
+    var tbl = tt.eq(0)
+    var links = $( "a.song.result-link", tbl );
+    var recs = [];
+
+    if ( links.length=== 0 ){
+      return {
+        statements: [ `Sorry I did not find any chords matching ${title} by ${artist}` ],
+        rec:false
+      }
+    }
+
+    console.log("begin processing ug links");
+    links.each(function(idx,atag){
+
+      //console.log($(atag).attr("href"));
+      var url = $(atag).attr("href");
+      var tr = $(atag).parents("tr").eq(0);
+
+      if ( !tr ){ 
+      
+      }
+      else{
+
+        //console.log("tds:", $("td",tr).length);
+        var tds = $("td",tr);
+
+        if ( tds.length < 4 ) throw new Error("Error parsing UG sr cant find tds");
+
+        var rating = $(".ratdig",tds.eq(2)).text();
+        var fmt = tds.eq(3).children().eq(0).text();
+
+        //console.log(url, rating,fmt);
+        //returnPkg.urls.push(url);
+        rating = parseInt(rating);
+        rating = (isNaN(rating))?0:rating;
+
+        recs.push({ url: url, rating: rating, fmt:  fmt , artist: artist, title:title });
+        return;
+      }
+    })
+
+    if ( recs.length=== 0 ){
+      return {
+        statements: [ `Sorry, I could not parse the results from Ultimate Guitar` ],
+        rec:false
+      }
+    }
+
+    recs = recs.filter(function(r){ 
+      return r.fmt=="chords" || r.fmt=="tab";
+    })
+
+    if (recs.length===0){
+      return {
+        statements: [ `I didn\'t find any chords or tabs on Ultimate Guitar` ],
+        rec:false
+      }
+    }
+    console.log("end processing ug links");
+    recs.sort(sortByRating);
+    var st = buildStatements(recs);
+    st.push("on Ultimate Guitar.");
+    var returnPkg = {
+      statements: st, 
+      recs: recs
+    }
+
+    return returnPkg;
   })
   .then(saveChords)
   .then((returnPkg)=>{
@@ -540,7 +449,6 @@ function searchUG(artist,title){
     return returnPkg;
   })
   .catch((err)=>{
-    console.error(err);
     var statusCode = _.get(err,'response.status',-1);
     switch(statusCode){
       case -1:
@@ -668,8 +576,6 @@ exports.get_version = function(req,res){
 }
 
 //search(process.argv[2], process.argv[3],0)
-//song(process.argv[2]);
-//searchUG(process.argv[2], process.argv[3],0)
 //saveLastSearch('rie-test','coldplay','fix you')
 /*
 get_version('rie-test','10')

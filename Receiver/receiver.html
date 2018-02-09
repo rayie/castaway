@@ -13,6 +13,7 @@ limitations under the License.
 <!DOCTYPE html>
 <html>
   <head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
     <style type="text/css">
       body {
         overflow:hidden;
@@ -21,25 +22,23 @@ limitations under the License.
       div.title ,
       div.title {
         display: table-cell;
+        font-family: "Roboto Mono", monospace;
         color:#ffffff;
         background-color:#000000;
         font-weight: 450;
-        font-family: Arial;
-        font-size:18px;
-        position:absolute;
+        font-size: 14px;
       }
       .left {
-        text-align: center;
+        text-align: left;
+        float: left;
         top: 0px;
-        left: 0px;
-        width:600px;
+        width:400px;
         height:720px;
       }
       .title.right {
-        text-align:center;
+        text-align:right;
+        float: right;
         top: 0px;
-        left: 600px;
-        width:600PX;
         height:720PX;
       }
 
@@ -49,24 +48,28 @@ limitations under the License.
         height:700px;
         top: 0;
         left: 0;
-        padding: 10px;
+        padding: 12px;
         position: absolute;
       }
 
       div#wrap pre {
         font-weight: 500;
-        font-family:Verdana, Geneva, sans-serif;
-        /* font-family: font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace; */
+        font-family: "Roboto Mono", monospace;
         font-size:13px;
         color:#FFFFFF;
+        margin: 0;
+        padding: 0;
+        height: 660px;
       }
 
       div#wrap pre span {
       	color: yellow;
       }
 
+
       #stateDiv {
         font-weight: 600;
+        font-family: "Roboto Mono", monospace;
         font-size: 42px;
         vertical-align: middle;
         text-align: center;
@@ -77,6 +80,23 @@ limitations under the License.
         left: 0;
         padding: 10px;
         position:absolute;
+      }
+
+      table {
+      	margin: 30px 0 0 0;
+      	padding: 0;
+      	width: 100%;
+      }
+      tr.twocol td {
+      	width: 608px;
+      	padding-right: 20px;
+      	border: 0;
+      }
+
+      tr.threecol td {
+      	width: 406px;
+      	padding-right: 20px;
+      	border: 0;
       }
 
     </style>
@@ -92,11 +112,11 @@ limitations under the License.
 
     <div id="wrap">
       <div style='width:100%'>
-        <table style='width: 96%;'>
+        <table id="mainTable" >
           <tr>
-            <td style='width: 32%;padding-right: 10px;border-right: 1px solid #000' id='col1'></td>
-            <td style='width: 32%;padding-right: 10px;border-right: 1px solid #000;' id='col2'></td>
-            <td style='width: 32%;' id='col3'></td>
+            <td id='col1'></td>
+            <td id='col2'></td>
+            <td id='col3'></td>
           </tr>
         </table>
       </div>
@@ -191,7 +211,7 @@ limitations under the License.
           	},
             message: function(msg){
               console.log("got pubnub msg")
-              $("#titleLeft").text("got pubnub msg");
+              $("#titleLeft").text("Received message from PubNub");
               console.log(msg);
               msg = msg.message;
               switch(msg.kind){
@@ -204,9 +224,12 @@ limitations under the License.
                 case "transpose":
                   $("#wrap").hide();
                   $("#stateDiv").html("transposing " + msg.dir + " " + msg.steps + " half steps").fadeIn();
+                 
                   for(var i =0 ; i < msg.steps; i++){ step(msg.dir); };
-                  $("#stateDiv").hide();
-                  $("#wrap").fadeIn(300);
+                  setTimeout(function(){
+                    $("#stateDiv").hide();
+                    $("#wrap").fadeIn(300);
+                  },3000);
                   return ;
                 default:
                           
@@ -221,7 +244,7 @@ limitations under the License.
           //https://storage.googleapis.com/song-chords/tab/billy_joel/uptown_girl_chords_62042
           var url = "https://storage.googleapis.com/song-chords/" + path;
           $.get(url,function(pre_html){
-          	$("#titleLeft").text("got chords");
+            $("#titleLeft").text("Received Chords from CastAway Bucket");
             xApp.formatChords(pre_html);
           }).fail(function(err){
           	$("#titleLeft").text("got err");
@@ -246,17 +269,48 @@ limitations under the License.
         },
 
         formatChords: function(ph){
-
         	console.log('ph',ph);
+        	ph = ph.replace(/\n{2,}/g,"\n");
         	var col1 = ph.split("\n");
         	if ( col1.length===1 ) return xApp.displayTitle(ph);
 
           $("#wrap").hide();
-          //$("#stateDiv").html("..formatting chords").fadeIn();
+          // 34 lines can fit vertically 
+          var maxLinesPerCol = 34;
+          console.log("TEST");
+          console.log( maxLinesPerCol );
+          console.log( col1.length , ( maxLinesPerCol * 2 ) );
+          if ( col1.length <= ( maxLinesPerCol * 2 ) ){
+            return xApp.formatTwo(col1);
+          }
 
-          $("#col1").html("");
-          $("#col2").html("");
-          $("#col3").html("");
+          return xApp.formatThree(col1);
+        },
+
+        formatTwo: function(col1){
+          $("#mainTable").html("<tr class='twocol'><td id='col1'></td><td id='col2'></td></tr>");
+          var linesPerCol = Math.floor( col1.length/2 );
+          var col2 = col1.splice(linesPerCol);
+
+          if ( col1[ col1.length-1 ].search(/<span/) !== -1 ){
+            col2 = [col1.pop()].concat(col2);
+          }
+
+          var pre1 = $("<pre></pre>");
+          pre1.html(col1.join("\n"));
+
+          var pre2 = $("<pre></pre>");
+          pre2.html(col2.join("\n"));
+          
+          $("#col1").append(pre1);
+          $("#col2").append(pre2);
+
+          $("#stateDiv").hide();
+          $("#wrap").fadeIn();
+        },
+
+        formatThree: function(col1){
+          $("#mainTable").html("<tr class='threecol'><td id='col1'></td><td id='col2'></td><td id='col3'></td></tr>");
           var linesPerCol = Math.floor( col1.length/3 );
           var col2 = col1.splice(linesPerCol);
           var col3 = col2.splice(linesPerCol); 
@@ -285,6 +339,7 @@ limitations under the License.
           $("#stateDiv").hide();
           $("#wrap").fadeIn();
         },
+
 
         init: function(){
           //window.onload = function() {
