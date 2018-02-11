@@ -1,0 +1,97 @@
+body {
+  overflow:hidden;
+  background-color: #000000;
+}
+
+div.title ,
+div.title {
+  display: table-cell;
+  font-family: "Roboto Mono", monospace;
+  color:#ffffff;
+  background-color:#000000;
+  font-weight: 450;
+  font-size: 14px;
+}
+.left {
+  text-align: left;
+  float: left;
+  top: 0px;
+  width:400px;
+  height:720px;
+}
+.title.right {
+  text-align:right;
+  float: right;
+  top: 0px;
+  height:720PX;
+}
+
+div#wrap {
+  display: hidden;
+  width:1260px;
+  height:700px;
+  top: 0;
+  left: 0;
+  padding: 12px;
+  position: absolute;
+  z-index: 100;
+}
+div#wrap.sender {
+  top: 80px;
+  border-top: 1px solid yellow;
+}
+
+/* top leve div container inside wrap, appended by service */
+div#wrap div {
+  width: 100%;
+}
+
+div#wrap pre {
+  font-weight: 500;
+  font-family: "Roboto Mono", monospace;
+  font-size:13px;
+  color:#FFFFFF;
+  margin: 0;
+  padding: 0;
+  height: 660px;
+}
+
+div#wrap pre span {
+  color: yellow;
+}
+
+
+#stateDiv {
+  font-weight: 600;
+  font-family: "Roboto Mono", monospace;
+  font-size: 42px;
+  vertical-align: middle;
+  text-align: center;
+  color: #fff;
+  width:1260px;
+  height:700px;
+  top: 280px;
+  left: 0;
+  padding: 10px;
+  position:absolute;
+}
+
+table {
+  margin: 30px 0 0 0;
+  padding: 0;
+  width: 100%;
+}
+tr.twocol td {
+  width: 608px;
+  padding-right: 20px;
+  border: 0;
+}
+
+tr.threecol td {
+  width: 406px;
+  padding-right: 20px;
+  border: 0;
+}
+a {
+ z-index: 0;
+}
