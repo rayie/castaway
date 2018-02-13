@@ -1,6 +1,7 @@
 'use strict';
 const Promise = require("bluebird");
 const _ = require("lodash");
+const cors = require("cors");
 const fs = require('fs');
 const write = Promise.promisify(fs.writeFile);
 const read = Promise.promisify(fs.readFile);
@@ -20,6 +21,7 @@ const startStr = "window.UGAPP.store.page";
 const axios = require("axios");
 const http = require('http');
 const https = require('https');
+
 const S = {
   //https://www.ultimate-guitar.com/search.php?search_type=title&order=&value=kesha+your+love+is+my+drug
   Search: axios.create({
@@ -161,11 +163,11 @@ function song(path){
       return pkg; //failed
     }
 
-
     //update meta so chromecast sender app Express erver get's gets notified (via storage pub/sub)
     //which will notify chromecast sender client (on chrome browser) via socket.io
     var pubnubPayload = {
-      kind: "chords", pathToChords: path.replace("https://tabs.ultimate-guitar.com/","")
+      kind: "chords", 
+      pathToChords: path.replace("https://tabs.ultimate-guitar.com/","")
     }
     return publishToPubNubCastawayChannel(pubnubPayload)
     .then((r)=>{
@@ -213,7 +215,13 @@ function parseSong(pathToTmp,res){
   // window.UGAPP.store.page = {"template":.... }</script>\n
   k = k.split(/\n/g)[0];
   k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>/,"");
-  k = JSON.parse(k);
+  try { 
+    k = JSON.parse(k);
+  }
+  catch(parseErr){
+    console.error("Failed parsing window.UGAPP");
+    console.error(k);
+  }
   console.log("got response form UG search");
   var pre_html = _.get(k,'data.tab_view.wiki_tab.content',"").trim();
   if(!pre_html){
@@ -307,7 +315,7 @@ function buildStatements(recs){
   return statements;
 }
 
-function search(artist,title,n){
+function search(artist,title,n,allResults){
   artist = artist.toLowerCase();
   title = title.toLowerCase();
 
@@ -323,11 +331,12 @@ function search(artist,title,n){
         statements: st, 
         rec: recs[ n ]
       }
+      if (allResults) returnPkg.recs=recs;
       console.log("done sorting datastore results");
       return returnPkg;
     }
 
-    return searchUG(artist,title);
+    return searchUG(artist,title,allResults);
   })
   .catch((err)=>{
     //console.error(err);
@@ -342,11 +351,11 @@ function searchDatastore(artist,title){
   .filter('title','=',title);
 
   return datastore.runQuery(q)
-  .then(( rr ) => {
+  .then(( ds_results ) => {
     console.log('datastore runQuery result')
-    console.log(rr);
-    if (rr.length===0 ) throw new Error("Failed query");
-    return rr[0];
+    console.log(ds_results );
+    if (ds_results.length===0 ) throw new Error("Failed query");
+    return ds_results[0];
   })
   .catch((err)=>{
     //console.error(err);
@@ -516,11 +525,17 @@ function parseUGListing(artist,title,res){
   */
 }
 
-function searchUG(artist,title){
+function searchUG(artist,title,allResults){
   var _artist = encodeURIComponent(artist);
   var _title = encodeURIComponent(title);
   var returnPkg = { };
-  var path = `search.php?search_type=title&order=&value=${_artist}+${_title}`;
+  if ( artist==="undefined" || artist===undefined){
+    var path = `search.php?search_type=title&order=&value=${_title}`;
+  }
+  else{
+    var path = `search.php?search_type=title&order=&value=${_artist}+${_title}`;
+  }
+
   var rc = {
     url:path,
     method: 'get',
@@ -536,7 +551,12 @@ function searchUG(artist,title){
   .then(saveChords)
   .then((returnPkg)=>{
     returnPkg.rec = returnPkg.recs.pop();
-    delete returnPkg.recs;
+    if ( allResults ){
+      //keep recs
+    }
+    else{
+      delete returnPkg.recs;
+    }
     return returnPkg;
   })
   .catch((err)=>{
@@ -566,117 +586,119 @@ function searchUG(artist,title){
 }
 
 exports.search = function(req,res){
-  let artist = _.get(req.body,'artist',false).toLowerCase();
-  let title = _.get(req.body,'title',false).toLowerCase();
-  let userId = _.get(req.body,'userId','no-user-id-provided');
-  console.log(userId,artist,title);
-  if (!artist) return res.status(500).send({msg:"Missing artist"});
-  if (!title) return res.status(500).send({msg:"Missing title"});
+  cors()(req,res,function(){
+    let artist = _.get(req.body,'artist',"undefined").toLowerCase();
+    let title = _.get(req.body,'title',false).toLowerCase();
+    let userId = _.get(req.body,'userId','no-user-id-provided');
+    let allResults = _.get(req.body,'allResults',false);
+    console.log(userId,artist,title);
+    if (!title) return res.status(500).send({msg:"Missing title"});
 
-  let pkg = { artist: artist, title:title };
-  //console.log(pkg);
-  return search(artist,title,0)
-  .then((rPkg)=>{
-    console.log(pkg);
-    console.log(rPkg);
-    _.merge(pkg,rPkg);
-    return saveLastSearch(userId,artist,title)
-    .then(( )=>{
-      return res.send(pkg);
+    let pkg = { artist: artist, title:title };
+    //console.log(pkg);
+    return search(artist,title,0,allResults)
+    .then((rPkg)=>{
+      console.log(pkg);
+      console.log(rPkg);
+      _.merge(pkg,rPkg);
+      return saveLastSearch(userId,artist,title)
+      .then(( )=>{
+        return res.send(pkg);
+      })
+      .catch((err)=>{ throw err; })
     })
-    .catch((err)=>{ throw err; })
-  })
-  .catch((err)=>{
+    .catch((err)=>{
 
-    return res.status(500).send(err);
+      return res.status(500).send(err);
+    })
   })
 }
 
 exports.song = function(req,res){
-  let ug_url = _.get(req.body,'ug_url',false);
-  console.log(ug_url);
-  if (!ug_url) return res.status(500).send({msg:"Missing ug url"});
+  cors()(req,res,function(){
+    let ug_url = _.get(req.body,'ug_url',false);
+    console.log(ug_url);
+    if (!ug_url) return res.status(500).send({msg:"Missing ug url"});
 
-  return song(ug_url)
-  .then(( pkg )=>{
-    console.log("final pkg from song");
-    console.log(pkg);
-    return res.send(pkg);
-  })
-  .catch((err)=>{
-    console.error('caught err in exports.song');
-    console.log(err);
-    return res.status(500).send(err);
-  })
+    return song(ug_url)
+    .then(( pkg )=>{
+      console.log("final pkg from song");
+      console.log(pkg);
+      return res.send(pkg);
+    })
+    .catch((err)=>{
+      console.error('caught err in exports.song');
+      console.log(err);
+      return res.status(500).send(err);
+    })
+  });
 }
 
 exports.get_version = function(req,res){
-  let verNum = _.get(req.body,'verNum','next');
-  let userId = _.get(req.body,'userId','no-user-id-provided');
-  if(verNum !=="next"){
-    verNum = ( isNaN(verNum) ) ? "next" : parseInt(verNum,10);
-  }
+  cors()(req,res,function(){
+    let verNum = _.get(req.body,'verNum','next');
+    let userId = _.get(req.body,'userId','no-user-id-provided');
+    if(verNum !=="next"){
+      verNum = ( isNaN(verNum) ) ? "next" : parseInt(verNum,10);
+    }
 
-  //console.log('userId',userId);
-  console.log('verNum',verNum);
-  var key = datastore.key([ "LastSearch", userId ]);
-  var lastSearch = false;
+    //console.log('userId',userId);
+    console.log('verNum',verNum);
+    var key = datastore.key([ "LastSearch", userId ]);
+    var lastSearch = false;
+    console.log('key',key);
+    return datastore.get(key)
+    .then((entities)=>{
+      lastSearch = _.get( entities,'0',false);  
+      console.log('lastSearch is:');
+      console.log(lastSearch);
+      if (false===lastSearch) throw new Error("Last search record not found")
+      return searchDatastore(lastSearch.artist.toLowerCase(), lastSearch.title.toLowerCase())
+    })
+    .then(( recs )=>{
+      if (recs.length===0) throw new Error("corrupt datastore");
 
-  console.log('key',key);
-
-  return datastore.get(key)
-  .then((entities)=>{
-    lastSearch = _.get( entities,'0',false);  
-    console.log('lastSearch is:');
-    console.log(lastSearch);
-    if (false===lastSearch) throw new Error("Last search record not found")
-    return searchDatastore(lastSearch.artist.toLowerCase(), lastSearch.title.toLowerCase())
-  })
-  .then(( recs )=>{
-    if (recs.length===0) throw new Error("corrupt datastore");
-
-    recs.sort(sortByRating);
-    recs.reverse();
-    if ( verNum === "next" ){
-      var n = lastSearch.cursor+1;
-      if ( lastSearch.cursor > recs.length ){
-        n = 0;
+      recs.sort(sortByRating);
+      recs.reverse();
+      if ( verNum === "next" ){
+        var n = lastSearch.cursor+1;
+        if ( lastSearch.cursor > recs.length ){
+          n = 0;
+        }
       }
-    }
-    else if (verNum <= recs.length){
-      var n = recs[verNum-1];
-    }
-    else{
-      var n = 0;
-    }
+      else if (verNum <= recs.length){
+        var n = recs[verNum-1];
+      }
+      else{
+        var n = 0;
+      }
 
-    console.log("n is " + n);
-    console.log(recs[n]);
-    return saveLastSearch(userId,lastSearch.artist,lastSearch.title,n)
-    .then(( )=>{
-      return res.send(recs[n]);
+      console.log("n is " + n);
+      console.log(recs[n]);
+      return saveLastSearch(userId,lastSearch.artist,lastSearch.title,n)
+      .then(( )=>{
+        return res.send(recs[n]);
+      })
+      .catch((err) => {
+        throw err;
+      })
     })
-    .catch((err) => {
-      throw err;
+    .catch((err)=>{
+      console.error('caught err in exports.get_version');
+      console.log(err);
+      return res.status(500).send(err);
     })
-  })
-  .catch((err)=>{
-    console.error('caught err in exports.get_version');
-    console.log(err);
-    return res.status(500).send(err);
-  })
+  });
 }
 
-//search(process.argv[2], process.argv[3],0)
-//song(process.argv[2]);
-//searchUG(process.argv[2], process.argv[3],0)
-//saveLastSearch('rie-test','coldplay','fix you')
 /*
-get_version('rie-test','10')
-.then((rPkg)=>{
-  console.log(rPkg);
-})
-.catch((err)=>{
-  console.log(err);
-})
+const F  = {
+  song: song,
+  search: search
+}
+
+F[ process.argv[2] ]( 
+  _.get(process.argv,3),
+  _.get(process.argv,4,null)
+)
 */

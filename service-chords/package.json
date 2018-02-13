@@ -6,13 +6,13 @@
   "dependencies": {
     "@google-cloud/datastore": "^1.3.3",
     "@google-cloud/storage": "1.2.1",
-    "pubnub": "*",
     "axios": "^0.17.1",
-    "dotenv": "*",
     "bluebird": "^3.5.1",
     "cheerio": "^1.0.0-rc.2",
+    "cors": "^2.8.4",
     "dotenv": "^4.0.0",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.4",
+    "pubnub": "*"
   },
   "devDependencies": {},
   "scripts": {
