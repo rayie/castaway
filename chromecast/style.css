@@ -1,5 +1,4 @@
 body {
-  overflow:hidden;
   background-color: #000000;
 }
 
@@ -36,9 +35,12 @@ div#wrap {
   position: absolute;
   z-index: 100;
 }
+
 div#wrap.sender {
-  top: 80px;
+  width: 100%;
+  height: auto;
   border-top: 1px solid yellow;
+  position: relative;
 }
 
 /* top leve div container inside wrap, appended by service */

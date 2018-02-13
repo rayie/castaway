@@ -110,7 +110,12 @@ xApp = {
 
   ajaxChords: function(path){
     //https://storage.googleapis.com/song-chords/tab/billy_joel/uptown_girl_chords_62042
-    var url = "https://storage.googleapis.com/song-chords/" + path;
+    if(path.substr(0,5)==="https")
+      var url = path.replace("https://tabs.ultimate-guitar.com/","https://storage.googleapis.com/song-chords/");
+    else
+      var url = "https://storage.googleapis.com/song-chords/" + path;
+    console.log("ajaxChords to " + url);
+
     $.get(url,function(pre_html){
       $("#titleLeft").text("Received Chords from CastAway Bucket");
       xApp.formatChords(pre_html);
@@ -120,6 +125,7 @@ xApp = {
       console.error(err);
     })
   },
+
 
   backdrop: function(){
   },
@@ -137,12 +143,38 @@ xApp = {
   },
 
   formatChords: function(ph){
+    /* 
+     * at font 11px, 6.6px wide per char
+     * at font 12px, 7.2px wide per char
+     * at font 13px, 7.8px wide per char
+     * at font 15px, 9px wide per char
+     *
+     */
     console.log('ph',ph);
     ph = ph.replace(/\n{2,}/g,"\n");
     var col1 = ph.split("\n");
+
+    var hh = col1.filter(function(line){
+      return line.search(/<span>/)===-1;
+    })
+    var max_char = hh.sort(function(a,b){
+      if (a.length>b.length) return 1;
+    }).pop().length;
+    
+    /* 
+    TV max width is 1260, less 12x2 for padding = 1236
+
+    */
+    var tvMaxWidth = 1236 - 20; 
+    var pxPerChar = 7.8;
+    var minColWidth = Math.ceil( max_char * pxPerChar );
+
+    var numOfColsCanFit = Math.ceil( tvMaxWidth / minColWidth );
+
+
     if ( col1.length===1 ) return xApp.displayTitle(ph);
 
-    $("#wrap").hide().append("<div><table id='mainTable'><tr> <td id='col1'></td><td id='col2'></td><td id='col3'></td></tr></table></div>");
+    $("#wrap").hide().append("<div id='tableContainer'><table id='mainTable'><tr> <td id='col1'></td><td id='col2'></td><td id='col3'></td></tr></table></div>");
 
     // 34 lines can fit vertically 
     var maxLinesPerCol = 34;

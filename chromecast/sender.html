@@ -3,31 +3,91 @@
     <link href="style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
     <title>Cast Sender App</title>
+    <style>
+      body {
+      	font-family: "Roboto Mono", monospace;
+      }
+      .third {
+      	margin-top: 20px;
+      	width: 30%;
+      	padding: 10px;
+      	float: left;
+      }
+      #debug {
+      	overflow-y: scroll;
+        height: 200px;	
+        max-height: 200px;	
+        color: #fff;
+      	border: 1px solid #fff;
+      }
+      #debug div {
+      	font-size:.88em;
+      }
+      .btn {
+      	font-size: 20px;
+      	padding: 6px;
+      	cursor: pointer;
+      	color: #fff;
+      	font-family: "Roboto Mono", monospace;
+      	border: 1px solid yellow;
+      }
+      input {
+      	width: 48%;
+      	padding: 3px;
+      	font-size: 18px;
+      }
+      .right {
+      	float: right;
+      }
+      .center {
+      	text-align: center;
+      }
+      a.rec {
+      	cursor: pointer;
+      	display:block;
+      	padding: 4px;
+      	font-size: 16px;
+      	color: #fff;
+      }
+
+    </style>
   </head>
   <body>
-    <a id="cast_btn" style="padding:20px;cursor:pointer;border:2px solid #fff;color:yellow; font-size:32px">CAST THIS</a>
-    <div class="title left" id="titleLeft">KLeft</div>
-    <div class="title right" id="titleRight">Right</div>
+    <div class='third'>
+      <a id="cast_btn" class='btn'>CAST THIS</a>
+    </div>
+    <div class='third'>
+      <input type='text' id="artist" placeholder="Artist">
+      <input type='text' id="title" placeholder="Title" class='right'>
+      <div style="clear:both"></div>
+      <div class='center' style='margin-top: 30px;'>
+        <a id="search_result" class='btn' ></a>
+      </div>
+      <div style="clear:both"></div>
+      <div class='center' style='margin-top: 30px;'>
+        <a id="search_btn" class='btn' >Search</a>
+      </div>
+    </div>
+    <div id="debug" class="third" ></div>
+    <div style="clear:both"></div>
+
     <div id="stateDiv" style='width:96%'>
       CastAway Sender
     </div>
 
     <div id="wrap" class="sender"></div>
-    <div id="debug" style="color:#fff"></div>
     <div style="clear:both"></div>
-
 
     <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.0.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script> 
 
     <script type="text/javascript" src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js"></script>
-    <script src="https://storage.googleapis.com/castaway/common.js"></script>
+    <script src="common.js"></script>
 
     <script type="text/javascript">
       var applicationID = '6DA08A38';
       var namespace = 'urn:x-cast:com.google.cast.sample.castaway';
       var session = null;
-
 
       /**
        * initialization
@@ -103,13 +163,14 @@
        * receiver listener during initialization
        */
       function receiverListener(e) {
+      	log("Receiver Listener Event:");
         if(e === 'available') {
           log('receiver found');
         }
         else {
           log('receiver list empty');
         }
-        console.log(e);
+        console.log("e",e);
       }
 
       /**
@@ -166,25 +227,81 @@
       function transcribe(words) {
         sendMessage(words);
       }
+      
+      function checkForCastAPI(){
+        console.log(chrome.cast);
+        console.log(chrome.cast.isAvailable);
+        console.log(chrome.cast , chrome.cast.isAvailable);
+        if (chrome.cast && chrome.cast.isAvailable) {
+          return setTimeout(initializeCastApi, 1000);
+        }
+
+        log("chromecast API not available.");
+        return setTimeout(checkForCastAPI,1000);
+      }
 
       $(document).ready(function(){
       	console.log("ready");
-  	    xApp.initPubNub();
+  	    //xApp.initPubNub();
   	    log("document ready");
   	    //update();
   	    log( $("#cast_btn").length );
   	    $("#cast_btn").bind("click",function(){
-            log("got click"); 
-            update();
+          log("got click"); 
+          update();
   	    })
-  	    $("#cast_btn").bind("tap",function(){
-            log("got tap"); 
+  	    $("#search_btn").bind("click",function(){
+          xApp.ajaxSearch();
   	    })
+
         /**
          * Call initialization for Cast
          */
-        if (!chrome.cast || !chrome.cast.isAvailable) {
-          setTimeout(initializeCastApi, 1000);
+        setTimeout(checkForCastAPI,2000);
+        xApp.recordSelected = function(e){
+          var ug_url = $(this).data("info").url
+          var url = "https://us-central1-castaway-191110.cloudfunctions.net/song";
+          $("#recList").hide();
+          $.post(url,{ug_url: ug_url},function(result){
+            console.log(result);
+            return xApp.ajaxChords(ug_url);
+          })
+          .fail(function(err){
+            log("failed ajaxSearch");
+            console.error("fn_search");
+            console.error(err);
+          })
+        };
+        xApp.toggleReclist = function(){
+        	$("#recList").toggle();
+        }
+
+        xApp.ajaxSearch = function(){
+        	var artist = $("#artist").val();
+        	var title = $("#title").val();
+          var url = "https://us-central1-castaway-191110.cloudfunctions.net/search";
+          console.log(artist,title,url);
+          $("#search_btn").hide();
+          $("#wrap").html("");
+          $.post(url,{artist:artist,title:title,allResults:true,userId:"rie"},function(result){
+            console.log(result); 
+            var recList = $("<div id='recList'></div>")
+            result.recs.sort(function(a,b){ if(a.rating<b.rating)return 1; else return -1;}).forEach(function(r,idx){
+              var rec = $("<a class='rec'>Ver " + (idx+1) + " (" + r.rating + ")</a>");
+              rec.data('info',r);
+              recList.append(rec);
+            })
+            $("#wrap").html(recList);
+            $("#recList a").bind("click",xApp.recordSelected);
+            $("#search_result").text("Found " + result.recs.length + " versions.")
+            .unbind("click").bind("click",xApp.toggleReclist);
+            $("#search_btn").show();
+          })
+          .fail(function(err){
+            log("failed ajaxSearch");
+            console.error("fn_search");
+            console.error(err);
+          })
         }
       })
 
