@@ -16,7 +16,7 @@ const dotenv = require('dotenv');
 const envConfig = dotenv.parse(fs.readFileSync('.env'))
 const PUBNUB_SUB_KEY=envConfig.PUBNUB_SUB_KEY;
 const PUBNUB_PUB_KEY=envConfig.PUBNUB_PUB_KEY;
-const startStr = "window.UGAPP.store.page";
+const UG_LISTING_START_STRING = "window.UGAPP.store.page";
 
 const axios = require("axios");
 const http = require('http');
@@ -209,12 +209,12 @@ function parseSong_legacy(pathToTmp,res){
 
 function parseSong(pathToTmp,res){
   var str = res.data.toString();
-  var pos = str.search(startStr);
+  var pos = str.search(UG_LISTING_START_STRING);
   console.log("pos of start str", pos);
   var k = str.slice(pos);
   // window.UGAPP.store.page = {"template":.... }</script>\n
   k = k.split(/\n/g)[0];
-  k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>/,"");
+  k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>|<\/p>|;/g,"");
   try { 
     k = JSON.parse(k);
   }
@@ -471,13 +471,19 @@ function parseUGListing_Legacy(artist,title,res){
 
 function parseUGListing(artist,title,res){
   var str = res.data.toString();
-  var pos = str.search(startStr);
+  var pos = str.search(UG_LISTING_START_STRING);
   console.log("pos of start str", pos);
   var k = str.slice(pos);
   // window.UGAPP.store.page = {"template":.... }</script>\n
   k = k.split(/\n/g)[0];
-  k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>/,"");
-  k = JSON.parse(k);
+  k = k.replace(/window.UGAPP.store.page =/,"").replace(/<\/script>|<\/p>|;|;$/g,"");
+  try { 
+    k = JSON.parse(k);
+  }
+  catch(parseErr){
+    console.error("Failed parsing window.UGAPP");
+    console.error(k);
+  }
 
   console.log("got response form UG search");
   var recs = k.data.results.filter((r)=>{
@@ -659,7 +665,7 @@ exports.get_version = function(req,res){
       if (recs.length===0) throw new Error("corrupt datastore");
 
       recs.sort(sortByRating);
-      recs.reverse();
+      //recs.reverse();
       if ( verNum === "next" ){
         var n = lastSearch.cursor+1;
         if ( lastSearch.cursor > recs.length ){

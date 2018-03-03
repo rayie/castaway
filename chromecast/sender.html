@@ -1,5 +1,6 @@
 <html>
   <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link href="style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
     <title>Cast Sender App</title>
@@ -49,34 +50,41 @@
       	font-size: 16px;
       	color: #fff;
       }
+      .hide { display:none }
 
     </style>
   </head>
   <body>
-    <div class='third'>
-      <a id="cast_btn" class='btn'>CAST THIS</a>
-    </div>
-    <div class='third'>
-      <input type='text' id="artist" placeholder="Artist">
-      <input type='text' id="title" placeholder="Title" class='right'>
-      <div style="clear:both"></div>
-      <div class='center' style='margin-top: 30px;'>
-        <a id="search_result" class='btn' ></a>
+    <div class='container-fluid'>
+      <div class='row'>
+        <div class='col-sm-4'>
+          <button id="cast_btn" type="button" class="btn btn-primary">
+            CAST THIS
+          </button>
+        </div>
+        <div class='col-sm-8'>
+          <div class='hide'>
+            <input type='text' id="artist" placeholder="Artist">
+            <input type='text' id="title" placeholder="Title" class='right'>
+            <button id="search_result" class='btn btn-primary'></button>
+            <button id="search_btn" class='btn btn-primary' >Search</button>
+          </div>
+          <button id="t_up" class='btn btn-primary' >Transpose Up</button>
+          <button id="t_down" class='btn btn-primary' >Transpose Down</button>
+        </div>
       </div>
-      <div style="clear:both"></div>
-      <div class='center' style='margin-top: 30px;'>
-        <a id="search_btn" class='btn' >Search</a>
+      <div class='row'>
+        <div id="debug" class="third" ></div>
+        <div style="clear:both"></div>
+
+        <div id="stateDiv" style='width:96%'>
+          CastAway Sender
+        </div>
+        <div id="wrap" class="sender"></div>
+        <div style="clear:both"></div>
       </div>
-    </div>
-    <div id="debug" class="third" ></div>
-    <div style="clear:both"></div>
 
-    <div id="stateDiv" style='width:96%'>
-      CastAway Sender
     </div>
-
-    <div id="wrap" class="sender"></div>
-    <div style="clear:both"></div>
 
     <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.0.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script> 
@@ -242,7 +250,7 @@
 
       $(document).ready(function(){
       	console.log("ready");
-  	    //xApp.initPubNub();
+  	    xApp.initPubNub();
   	    log("document ready");
   	    //update();
   	    log( $("#cast_btn").length );
@@ -253,18 +261,35 @@
   	    $("#search_btn").bind("click",function(){
           xApp.ajaxSearch();
   	    })
+  	    $("#test_btn").bind("click",function(){
+          xApp.publish();
+  	    })
+  	    $("#t_up").bind("click",function(){
+          xApp.transpose('up');
+  	    })
+  	    $("#t_down").bind("click",function(){
+          xApp.transpose('down');
+  	    })
 
         /**
          * Call initialization for Cast
          */
         setTimeout(checkForCastAPI,2000);
         xApp.recordSelected = function(e){
-          var ug_url = $(this).data("info").url
+
+          var ug_url = $(this).data("info").url;
+          if ( xApp.versions[ug_url]!== undefined){
+            return xApp.formatChords(xApp.versions[ug_url]) ;
+          }
+
+
           var url = "https://us-central1-castaway-191110.cloudfunctions.net/song";
           $("#recList").hide();
           $.post(url,{ug_url: ug_url},function(result){
             console.log(result);
-            return xApp.ajaxChords(ug_url);
+            return xApp.ajaxChords(ug_url,function(ph){
+                xApp.versions[ug_url] = ph;
+            });
           })
           .fail(function(err){
             log("failed ajaxSearch");
@@ -272,11 +297,49 @@
             console.error(err);
           })
         };
+        xApp.storeVersion = function(ph){
+            xApp.versions
+        }
         xApp.toggleReclist = function(){
         	$("#recList").toggle();
         }
-
+        xApp.transpose = function(dir){
+          xApp.pubnub.publish(
+              {
+                  message: {
+                    kind:"transpose",
+                    dir: dir,
+                    steps: 1
+                  },
+                  channel: 'castaway',
+                  sendByPost: false, // true to send via post
+                  storeInHistory: false, //override default storage options
+              },
+              function (status, response) {
+                  // handle status, response
+              }
+          );
+          
+        },
+        xApp.publish = function(){
+          xApp.pubnub.publish(
+              {
+                  message: {
+                    kind:"state",
+                    txt:"Hello from sender, " + (new Date()).getTime()
+                  },
+                  channel: 'castaway',
+                  sendByPost: false, // true to send via post
+                  storeInHistory: false, //override default storage options
+              },
+              function (status, response) {
+                  // handle status, response
+              }
+          );
+        }
+       
         xApp.ajaxSearch = function(){
+          xApp.versions = {};
         	var artist = $("#artist").val();
         	var title = $("#title").val();
           var url = "https://us-central1-castaway-191110.cloudfunctions.net/search";

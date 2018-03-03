@@ -108,7 +108,7 @@ xApp = {
     xApp.pubnub.subscribe({ channels: ['castaway'] });
   },
 
-  ajaxChords: function(path){
+  ajaxChords: function(path, cb){
     //https://storage.googleapis.com/song-chords/tab/billy_joel/uptown_girl_chords_62042
     if(path.substr(0,5)==="https")
       var url = path.replace("https://tabs.ultimate-guitar.com/","https://storage.googleapis.com/song-chords/");
@@ -119,6 +119,9 @@ xApp = {
     $.get(url,function(pre_html){
       $("#titleLeft").text("Received Chords from CastAway Bucket");
       xApp.formatChords(pre_html);
+      if( typeof cb==='function'){
+        return cb(pre_html);        
+      }
     }).fail(function(err){
       $("#titleLeft").text("got err");
       console.error("ajaxChords failed");
@@ -142,7 +145,9 @@ xApp = {
     //window.castReceiverManager.setApplicationState(text);
   },
 
+
   formatChords: function(ph){
+    xApp.last_ph = ph;
     /* 
      * at font 11px, 6.6px wide per char
      * at font 12px, 7.2px wide per char
@@ -157,9 +162,33 @@ xApp = {
     var hh = col1.filter(function(line){
       return line.search(/<span>/)===-1;
     })
+
+    var rows = col1.map(function(lineTxt, idx){
+
+      var words = lineTxt.split(/ /g);
+
+      if (lineTxt.search(/<span>/)>-1){
+
+        return { idx: idx, lineTxt: lineTxt,  chords:true }       
+      }
+        
+      var words = lineTxt.split(/ /g);
+      return { idx: idx,lineTxt: lineTxt, words:words, chords:false }
+      
+    })
+
     var max_char = hh.sort(function(a,b){
       if (a.length>b.length) return 1;
     }).pop().length;
+    
+    var totalChars  = 0;
+    var nonBlankLines = hh.filter(function(h){
+      return h.trim().length;
+    })
+    nonBlankLines.forEach(function(h){
+      totalChars+=h.trim().length;
+    })
+    var avgCharPerLine = Math.ceil(totalChars/nonBlankLines.length);
     
     /* 
     TV max width is 1260, less 12x2 for padding = 1236
@@ -170,7 +199,6 @@ xApp = {
     var minColWidth = Math.ceil( max_char * pxPerChar );
 
     var numOfColsCanFit = Math.ceil( tvMaxWidth / minColWidth );
-
 
     if ( col1.length===1 ) return xApp.displayTitle(ph);
 
@@ -244,6 +272,9 @@ xApp = {
     cast.receiver.logger.setLevelValue(0);
     window.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
     console.log('Starting Receiver Manager');
+
+    xApp.loadMsg("Starting CastAway Receiver")
+
     // handler for the 'ready' event
     castReceiverManager.onReady = function(event) {
       console.log('Received Ready event: ' + JSON.stringify(event.data));
@@ -273,8 +304,10 @@ xApp = {
     // handler for the CastMessageBus message event
     window.messageBus.onMessage = function(event) {
       console.log('Message [' + event.senderId + ']: ' + event.data);
+      xApp.loadMsg("Got message");
+      xApp.loadMsg(event.data);
       // display the message from the sender
-      xApp.formatChords(event.data);
+      // xApp.formatChords(event.data);
       // inform all senders on the CastMessageBus of the incoming message event
       // sender message listener will be invoked
       window.messageBus.send(event.senderId, event.data);
