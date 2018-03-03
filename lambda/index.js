@@ -110,8 +110,7 @@ const NextVersion = function() {
       throw new Error("Failed getting version");
     }
 
-    toReceiver({ kind:"state",txt:"Pulling up another version..."})
-
+    toReceiver({ kind:"nextVersion",txt:"Pulling up another version..."})
     return gcp_song(pkg.url)
   })
   .then((songPkg)=>{
@@ -189,7 +188,11 @@ const GetChords = function() {
    const msgA = artist.value + " is the artist,  " + songTitle.value + " is the song.";
    const directiveA = new Alexa.directives.VoicePlayerSpeakDirective(requestId, msgA);
 
-   toReceiver({ kind:"state",txt:"..searching for <i>" + songTitle.value + "</i> by <i>" + artist.value+"</i>"});
+   toReceiver({ 
+     kind:"search",
+     txt:"..searching for <i>" + songTitle.value + "</i> by <i>" + artist.value+"</i>",
+     artist: artist.value, title: songTitle.value
+   });
 
    console.log("directive endpoint:", endpoint );
    console.log("directive token:", token);

@@ -607,11 +607,12 @@ exports.search = function(req,res){
       console.log(pkg);
       console.log(rPkg);
       _.merge(pkg,rPkg);
+
       return saveLastSearch(userId,artist,title)
-      .then(( )=>{
-        return res.send(pkg);
-      })
-      .catch((err)=>{ throw err; })
+    })
+    .then(( )=>{
+
+      return res.send(pkg);
     })
     .catch((err)=>{
 
