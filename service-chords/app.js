@@ -77,6 +77,12 @@ function song(path){
     path = path.replace("https://tabs.ultimate-guitar.com/","");
   } 
   var key = datastore.key([ DS_KIND, path ]);
+
+
+  var pubnubPayload = {
+    kind: "chords", 
+  }
+
   //console.log('key',key);
   return datastore.get(key)
   .then((entities)=>{
@@ -87,6 +93,8 @@ function song(path){
     if (existingPath){ 
       //we already have the html, we just need to update the metadata field so storage pubsub event fires
       console.log("we already have the html, we just need to update the metadata field so storage pubsub event fires");
+      pubnubPayload.artist = entities[0].artist;
+      pubnubPayload.title = entities[0].title;
       return {
         success: true,
         statements: [ 'Got it' ]
@@ -124,6 +132,10 @@ function song(path){
     .then((entities)=>{
       console.log("got datastore entities" , entities.length);
       entities[0].path = path;
+
+      pubnubPayload.artist = entities[0].artist;
+      pubnubPayload.title = entities[0].title;
+
       return datastore.update({ key: key, data: entities[0] })
     })
     .then((datastoreUpdateResult)=>{
@@ -165,10 +177,8 @@ function song(path){
 
     //update meta so chromecast sender app Express erver get's gets notified (via storage pub/sub)
     //which will notify chromecast sender client (on chrome browser) via socket.io
-    var pubnubPayload = {
-      kind: "chords", 
-      pathToChords: path.replace("https://tabs.ultimate-guitar.com/","")
-    }
+    pubnubPayload.pathToChords = path.replace("https://tabs.ultimate-guitar.com/","");
+
     return publishToPubNubCastawayChannel(pubnubPayload)
     .then((r)=>{
       console.log('publishToPubNubResult',r);
@@ -188,6 +198,7 @@ function song(path){
     }
   })
 }
+
 function parseSong_legacy(pathToTmp,res){
   var nn = $("pre.js-tab-content.js-copy-content.js-tab-controls-item",res.data);
   //console.log(nn); console.log(nn.length);

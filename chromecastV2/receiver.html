@@ -70,9 +70,11 @@
       </div>
     </header>
     <section id="services">
+      <div class="container" id="top_of_song" style="padding-top:78px;">
+        <span id="song_title"></span> by <span id="song_artist"></span>
+      </div>
       <div class="container" id="wrap">
       </div>
-
       <div class="container">
         <div class="row">
           <div class="col-lg-3 col-md-6 text-center">
@@ -246,8 +248,10 @@
                   // to notify sender that a search was done via alexa, RECEIVER don't do anytihg
                   return; 
                 case "chords": 
-                  $("#titleRight").text(msg.pathToChords);
+                  $("#song_title").text(msg.title);
+                  $("#song_artist").text(msg.artist);
                   console.log("got path:"+msg.pathToChords);
+
                   return xApp.ajaxChords(msg.pathToChords);
                 case "state":
                   return xApp.loadMsg(msg.txt);

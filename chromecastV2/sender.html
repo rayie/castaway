@@ -272,7 +272,7 @@
         </div>
 
 
-        <a id="search_btn"class="btn btn-light btn-xl sr-button" >Search!</a>
+        <a id="search_btn"class="btn btn-primary btn-xl sr-button" >Search!</a>
 
         <!--
         <button id="search_result" class='btn btn-primary'></button>
@@ -285,15 +285,32 @@
     <section id="contact">
       <div class="container">
         <div class="row">
-          <div class="col-lg-4 ml-auto text-center">
+          <div class="col-lg-12 ml-auto text-center">
             <h5 id="titleName">title:</h5> by <h5 id="artistName">artist:</h5>
           </div>
-          <div class="col-lg-4 mr-auto text-center">
+        </div>
+
+        <div class="controlBtns row none">
+          <div class="col-lg-4 mx-auto text-center">
+            <a id="trim_btn" class="btn btn-primary btn-xl" >Trim Top Lines</a>
+          </div>
+          <div class="col-lg-4 mx-auto text-center">
+            <a data-dir="up" class="btn transpose btn-primary btn-xl" >Transpose Up</a>
+          </div>
+          <div class="col-lg-4 mx-auto text-center">
+            <a data-dir="down" class="btn transpose btn-primary btn-xl" >Transpose Down</a>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-lg-12 mr-auto text-center">
             <i class="fa fa-envelope-o fa-3x mb-3 sr-contact"></i>
             <p id="rec_list_container">
             </p>
           </div>
         </div>
+
+
       </div>
     </section>
 
@@ -548,19 +565,19 @@
         }
         xApp.transpose = function(dir){
           xApp.pubnub.publish(
-              {
-                  message: {
-                    kind:"transpose",
-                    dir: dir,
-                    steps: 1
-                  },
-                  channel: 'castaway',
-                  sendByPost: false, // true to send via post
-                  storeInHistory: false, //override default storage options
-              },
-              function (status, response) {
-                  // handle status, response
-              }
+            {
+                message: {
+                  kind:"transpose",
+                  dir: dir,
+                  steps: 1
+                },
+                channel: 'castaway',
+                sendByPost: false, // true to send via post
+                storeInHistory: false, //override default storage options
+            },
+            function (status, response) {
+                // handle status, response
+            }
           );
           
         },
@@ -592,6 +609,8 @@
                    
                   return; 
                 case "chords": 
+                  console.log("sender recieved 'chords' event from pubnub");
+                  $(".controlBtns").show();
                   return;
                   $("#titleRight").text(msg.pathToChords);
                   console.log("got path:"+msg.pathToChords);
@@ -626,7 +645,7 @@
             console.log(result); 
             var recList = $("<div id='recList'></div>")
             result.recs.sort(function(a,b){ if(a.rating<b.rating)return 1; else return -1;}).forEach(function(r,idx){
-              var rec = $("<div class='rec' style='margin-bottom: 16px;'>Ver " + (idx+1) + " (" + r.rating + ")</div>");
+              var rec = $("<div class='rec' style='cursor: pointer;margin-bottom: 16px;'>Ver " + (idx+1) + " (" + r.rating + ")</div>");
               rec.data('info',r);
               recList.append(rec);
             })
@@ -646,6 +665,7 @@
             console.error(err);
           })
         }
+
   	    xApp.initPubNub();
       	console.log("ready");
   	    log("document ready");
@@ -667,13 +687,14 @@
   	    $("#test_btn").bind("click",function(){
           xApp.publish();
   	    })
-  	    $("#t_up").bind("click",function(){
-          xApp.transpose('up');
+  	    $(".btn.transpose").bind("click",function(){
+  	    	var dir = $(this).data("dir")
+  	    	console.log(dir);
+          xApp.transpose( dir );
   	    })
-  	    $("#t_down").bind("click",function(){
-          xApp.transpose('down');
-  	    })
-
+        $("#trim_btn").bind("click", function(){
+        	 xApp.removeTopLines(5);
+        });
 
         // send scroll message to receiver
         $('a.rc-js-scroll-trigger[href*="#"]:not([href="#"])').click(function() {

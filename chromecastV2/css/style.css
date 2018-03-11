@@ -302,6 +302,7 @@ header.masthead p {
 .btn-primary {
   background-color: #F05F40;
   border-color: #F05F40;
+  margin-bottom: 12px;
 }
 
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
@@ -316,7 +317,7 @@ header.masthead p {
 div#wrap pre {
   font-weight: 500;
   font-family: "Roboto Mono", monospace;
-  font-size:12px;
+  font-size:11px;
   color:#000;
   margin: 0;
   padding: 0;
@@ -327,5 +328,16 @@ div#wrap pre span {
   font-family: "Roboto Mono", monospace;
   color: gray;
   font-weight: bold;
-  font-size:12px;
+  font-size:11px;
 }
+
+div#wrap pre.sm ,
+div#wrap pre.sm span {
+  font-size:9px;
+}
+
+div#wrap pre.x-sm ,
+div#wrap pre.x-sm span {
+  font-size:7px;
+}
+

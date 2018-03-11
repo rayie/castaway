@@ -107,10 +107,14 @@ var xApp = {
     //window.castReceiverManager.setApplicationState(text);
   },
 
+  removeTopLines: function(n){
+    var ph = xApp.last_col1.slice(n+1);
+    console.log(ph);
+    xApp.formatChords(ph);
+  },
 
   formatChords: function(ph){
     log("got to formatchords");
-    xApp.last_ph = ph;
     /* 
      * at font 11px, 6.6px wide per char
      * at font 12px, 7.2px wide per char
@@ -119,12 +123,25 @@ var xApp = {
      *
      */
     console.log('ph',ph);
-    ph = ph.replace(/\n{2,}/g,"\n");
-    var col1 = ph.split("\n");
+    if (typeof ph==="string"){
+      ph = ph.replace(/\n{2,}/g,"\n");
+      var col1 = ph.split("\n");
+    }
+    else{
+      var col1 = ph;
+    }
+
+    xApp.last_col1 = [].concat(col1);
 
     var hh = col1.filter(function(line){
       return line.search(/<span>/)===-1;
     })
+
+    /*
+    col1 = col1.map(function(c){
+      return (c.search(/<span>/)===-1) : c.trim() : c;
+    })
+    */
 
     var rows = col1.map(function(lineTxt, idx){
 
@@ -165,7 +182,7 @@ var xApp = {
 
     if ( col1.length===1 ) return xApp.displayTitle(ph);
 
-    $("#wrap").hide().append(`<div id='mainTable' class='row'></div>`);
+    $("#wrap").html(`<div id='mainTable' class='row'></div>`);
 
     // 34 lines can fit vertically 
     var maxLinesPerCol = 34;
@@ -179,7 +196,7 @@ var xApp = {
   },
 
   formatTwo: function(col1){
-    $("#mainTable").html(`<div class='row'><div class='col-lg-8 mx-auto' id='col1'></div><div class='col-lg-8 mx-auto' id='col2'></div></div>`);
+    $("#mainTable").html(`<div class='col-lg-6' id='col1'></div><div class='col-lg-6' id='col2'></div>`);
     var linesPerCol = Math.floor( col1.length/2 );
     var col2 = col1.splice(linesPerCol);
 
@@ -198,15 +215,11 @@ var xApp = {
 
     $("#stateDiv").hide();
     $("#wrap").fadeIn();
-    xApp.scrollTo("wrap");
+    xApp.scrollTo("top_of_song");
   },
 
   formatThree: function(col1){
-    $("#mainTable").html(`<div class='row'>
-        <div class='col-lg-4 mx-auto' id='col1'></div>
-        <div class='col-lg-4 mx-auto' id='col2'></div>
-        <div class='col-lg-4 mx-auto' id='col3'></div>
-      </div>`);
+    $("#mainTable").html(`<div class='col-lg-4' id='col1'></div><div class='col-lg-4' id='col2'></div><div class='col-lg-4' id='col3'></div>`);
     var linesPerCol = Math.floor( col1.length/3 );
     var col2 = col1.splice(linesPerCol);
     var col3 = col2.splice(linesPerCol); 
@@ -233,7 +246,7 @@ var xApp = {
     $("#col3").append(pre3);
     $("#stateDiv").hide();
     $("#wrap").fadeIn();
-    xApp.scrollTo("wrap");
+    xApp.scrollTo("top_of_song");
   },
   scrollTo: function(anchor_id){
     log("got scroll to message" + anchor_id);
