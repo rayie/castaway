@@ -82,7 +82,7 @@ var xApp = {
       //$("#titleLeft").text("Received Chords from CastAway Bucket");
       log("Received Chords from CastAway Bucket");
       xApp.formatChords(pre_html);
-      if( typeof cb==='function'){
+      if(typeof cb==='function'){
         return cb(pre_html);        
       }
     }).fail(function(err){
@@ -187,7 +187,7 @@ var xApp = {
     // 34 lines can fit vertically 
     var maxLinesPerCol = 34;
     log("TEST");
-    log( maxLinesPerCol );
+    log('maxLinesPerCol', maxLinesPerCol );
     log( col1.length , ( maxLinesPerCol * 2 ) );
     if ( col1.length <= ( maxLinesPerCol * 2 ) ){
       return xApp.formatTwo(col1);
@@ -196,6 +196,7 @@ var xApp = {
   },
 
   formatTwo: function(col1){
+    log("2 column formatting");
     $("#mainTable").html(`<div class='col-lg-6' id='col1'></div><div class='col-lg-6' id='col2'></div>`);
     var linesPerCol = Math.floor( col1.length/2 );
     var col2 = col1.splice(linesPerCol);
@@ -219,6 +220,7 @@ var xApp = {
   },
 
   formatThree: function(col1){
+    log("3 column formatting");
     $("#mainTable").html(`<div class='col-lg-4' id='col1'></div><div class='col-lg-4' id='col2'></div><div class='col-lg-4' id='col3'></div>`);
     var linesPerCol = Math.floor( col1.length/3 );
     var col2 = col1.splice(linesPerCol);

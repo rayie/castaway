@@ -324,6 +324,7 @@ div#wrap pre {
   height: 660px;
 }
 
+/*
 div#wrap pre span {
   font-family: "Roboto Mono", monospace;
   color: gray;
@@ -340,4 +341,4 @@ div#wrap pre.x-sm ,
 div#wrap pre.x-sm span {
   font-size:7px;
 }
-
+*/

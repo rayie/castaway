@@ -24,6 +24,13 @@
 
     <!-- Custom styles for this template -->
     <link href="css/style.css" rel="stylesheet">
+    <style>
+      /* override receiver's font size */
+      div#wrap pre {
+        font-size:14px;
+        padding: 4px;
+      }
+    </style>
 
   </head>
 
@@ -39,16 +46,16 @@
         <div class="collapse navbar-collapse" id="navbarResponsive">
           <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-              <a class="nav-link rc-js-scroll-trigger" href="#about">About</a>
+              <a class="nav-link rc-js-scroll-trigger" href="#search">Search</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link rc-js-scroll-trigger" href="#services">Services</a>
+              <a class="nav-link rc-js-scroll-trigger" href="#listing">Version Listing</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link rc-js-scroll-trigger" href="#portfolio">Portfolio</a>
+              <a class="nav-link rc-js-scroll-trigger" href="#chords">Chords</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link rc-js-scroll-trigger" href="#contact">Contact</a>
+              <a class="nav-link rc-js-scroll-trigger" href="#debugsection">Debug</a>
             </li>
           </ul>
         </div>
@@ -85,29 +92,6 @@
         </div>
       </div>
     </header>
-
-    <section class="bg-primary" id="about">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8 mx-auto text-center">
-            <h2 class="section-heading">Debug Section:</h2>
-            <hr class="my-4">
-            <div class="mb-5" id="debug">
-            </div>
-            <hr class="my-4">
-            <p class="mb-5" id="debug">Ready to start your next project with us? That's great! Give us a call or send us an email and we will get back to you as soon as possible!</p>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-8 mx-auto text-center">
-            <h2 class="section-heading text-white">We've got what you need!</h2>
-            <hr class="light my-4">
-            <p class="text-faded mb-4">Start Bootstrap has everything you need to get your new website up and running in no time! All of the templates and themes on Start Bootstrap are open source, free to download, and easy to use. No strings attached!</p>
-            <a class="btn btn-light btn-xl js-scroll-trigger" href="#services">Get Started!</a>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <section id="services" class='none'>
       <div class="container">
@@ -152,7 +136,7 @@
       </div>
     </section>
 
-    <section class="p-0" id="portfolio">
+    <section class="none p-0" id="portfolio">
       <div class="container-fluid p-0">
         <div class="row no-gutters popup-gallery">
           <div class="col-lg-4 col-sm-6">
@@ -249,12 +233,11 @@
       </div>
     </section>
 
-    <section class="bg-dark text-white">
+    <section id="search" class="bg-dark text-white">
       <div class="container text-center">
-        <h2 class="mb-4">Free Download at Start Bootstrap!</h2>
+        <h2 class="mb-4">Search for Chords</h2>
 
         <div class="row">
-
 
           <div class="input-group mb-3">
             <div class="input-group-prepend">
@@ -282,7 +265,7 @@
       </div>
     </section>
 
-    <section id="contact">
+    <section id="listing">
       <div class="container">
         <div class="row">
           <div class="col-lg-12 ml-auto text-center">
@@ -301,16 +284,36 @@
             <a data-dir="down" class="btn transpose btn-primary btn-xl" >Transpose Down</a>
           </div>
         </div>
-
-        <div class="row">
-          <div class="col-lg-12 mr-auto text-center">
-            <i class="fa fa-envelope-o fa-3x mb-3 sr-contact"></i>
-            <p id="rec_list_container">
-            </p>
-          </div>
+        <div id="rec_list_container">
         </div>
 
+      </div>
+    </section>
 
+    <section id="chords">
+      <div id="wrap" style="padding: 12px;">
+      </div>
+    </section>
+
+    <section class="bg-primary" id="debugsection">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-heading">Debug Section:</h2>
+            <hr class="my-4">
+            <div class="mb-5" id="debug">
+            </div>
+            <hr class="my-4">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-heading text-white">We've got what you need!</h2>
+            <hr class="light my-4">
+            <p class="text-faded mb-4">Start Bootstrap has everything you need to get your new website up and running in no time! All of the templates and themes on Start Bootstrap are open source, free to download, and easy to use. No strings attached!</p>
+            <a class="btn btn-light btn-xl js-scroll-trigger" href="#services">Get Started!</a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -545,8 +548,6 @@
           //$("#recList").hide();
           $.post(url,{ug_url: ug_url},function(result){
             console.log(result);
-            return;
-
             return xApp.ajaxChords(ug_url,function(ph){
               xApp.versions[ug_url] = ph;
             });
@@ -643,15 +644,15 @@
           $("#rec_list_container").html("");
           $.post(url,{artist:artist,title:title,allResults:true,userId:"rie"},function(result){
             console.log(result); 
-            var recList = $("<div id='recList'></div>")
+            var recList = $("<div class='d-flex flex-wrap flex-row' id='recList'></div>")
             result.recs.sort(function(a,b){ if(a.rating<b.rating)return 1; else return -1;}).forEach(function(r,idx){
-              var rec = $("<div class='rec' style='cursor: pointer;margin-bottom: 16px;'>Ver " + (idx+1) + " (" + r.rating + ")</div>");
+              var rec = $("<div class='rec p-4' style='cursor: pointer;margin-bottom: 16px;'>Ver " + (idx+1) + " (" + r.rating + ")</div>");
               rec.data('info',r);
               recList.append(rec);
             })
 
             $("#rec_list_container").html(recList);
-            $("#recList div").bind("click",xApp.recordSelected);
+            $("#recList div").unbind("click").bind("click",xApp.recordSelected);
             xApp.scrollTo("rec_list_container");
 
             return;
