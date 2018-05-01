@@ -115,6 +115,7 @@ var xApp = {
 
   formatChords: function(ph){
     log("got to formatchords");
+    $("#mainTable").html("<div class='col-lg-12' '><strong>...loading chords</strong></div>");
     /* 
      * at font 11px, 6.6px wide per char
      * at font 12px, 7.2px wide per char

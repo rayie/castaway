@@ -29,6 +29,7 @@
       div#wrap pre {
         font-size:14px;
         padding: 4px;
+        overflow: visible;
       }
     </style>
 
@@ -56,6 +57,15 @@
             </li>
             <li class="nav-item">
               <a class="nav-link rc-js-scroll-trigger" href="#debugsection">Debug</a>
+            </li>
+            <li class="nav-item">
+              <a id="trim_btn" class="nav-link btn" >Trim Top</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link btn transpose" data-dir='up' >Up</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link btn transpose" data-dir='down' >Down</a>
             </li>
           </ul>
         </div>
@@ -273,17 +283,19 @@
           </div>
         </div>
 
+        <!--
         <div class="controlBtns row none">
-          <div class="col-lg-4 mx-auto text-center">
+          <div class="col-sm-4 mx-auto text-center">
             <a id="trim_btn" class="btn btn-primary btn-xl" >Trim Top Lines</a>
           </div>
-          <div class="col-lg-4 mx-auto text-center">
+          <div class="col-sm-4 mx-auto text-center">
             <a data-dir="up" class="btn transpose btn-primary btn-xl" >Transpose Up</a>
           </div>
-          <div class="col-lg-4 mx-auto text-center">
+          <div class="col-sm-4 mx-auto text-center">
             <a data-dir="down" class="btn transpose btn-primary btn-xl" >Transpose Down</a>
           </div>
         </div>
+        -->
         <div id="rec_list_container">
         </div>
 
@@ -565,6 +577,7 @@
         	$("#recList").toggle();
         }
         xApp.transpose = function(dir){
+          step(dir);
           xApp.pubnub.publish(
             {
                 message: {
@@ -641,12 +654,13 @@
           var url = "https://us-central1-castaway-191110.cloudfunctions.net/search";
           console.log(artist,title,url);
           //$("#search_btn").hide();
-          $("#rec_list_container").html("");
+          $("#rec_list_container").html("<b>.....loading chord list</b>");
+
           $.post(url,{artist:artist,title:title,allResults:true,userId:"rie"},function(result){
             console.log(result); 
             var recList = $("<div class='d-flex flex-wrap flex-row' id='recList'></div>")
             result.recs.sort(function(a,b){ if(a.rating<b.rating)return 1; else return -1;}).forEach(function(r,idx){
-              var rec = $("<div class='rec p-4' style='cursor: pointer;margin-bottom: 16px;'>Ver " + (idx+1) + " (" + r.rating + ")</div>");
+              var rec = $("<div class='rec p-4' style='cursor: pointer;margin-bottom: 16px;'>Ver " + (idx+1)+ "  - " +r.fmt+ " (" + r.rating + ")</div>");
               rec.data('info',r);
               recList.append(rec);
             })
@@ -654,7 +668,6 @@
             $("#rec_list_container").html(recList);
             $("#recList div").unbind("click").bind("click",xApp.recordSelected);
             xApp.scrollTo("rec_list_container");
-
             return;
             $("#search_result").text("Found " + result.recs.length + " versions.")
             .unbind("click").bind("click",xApp.toggleReclist);
