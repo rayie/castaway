@@ -1,0 +1,21 @@
+{
+  "name": "UG Hack",
+  "version": "1.2",
+  "description": "Hack the UG!",
+  "permissions": [
+    "webNavigation","activeTab"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.ultimate-guitar.com/*"],
+      "all_frames": false,
+      "run_at": "document_end",
+      "js": ["jq.min.js", "contentscript.js"]
+    }
+  ],
+  "manifest_version": 2
+}
