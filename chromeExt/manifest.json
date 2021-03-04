@@ -1,10 +1,8 @@
 {
   "name": "UG Hack",
-  "version": "1.2",
+  "version": "1.5",
   "description": "Hack the UG!",
-  "permissions": [
-    "webNavigation","activeTab"
-  ],
+  "permissions": [ ],
   "background": {
     "scripts": ["background.js"],
     "persistent": false
